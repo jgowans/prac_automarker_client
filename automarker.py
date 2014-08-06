@@ -24,30 +24,28 @@ sub_dirs = os.listdir()
 groupman.restart()
 while (groupman.has_next() == True):
     group = groupman.next()
-    group_dir = None
+    group_dirs = []
     for d in sub_dirs:
         for stdnum in group.members:
-            if d.find(stdnum.lower()) >= 0:
-                if group_dir is None:
-                    group_dir = d
-                else:
-                    group_dir = None
-                    groupman.set_comment(groupnum, "Multiple submissions not marked")
-    group.directory = BASE_DIR + group_dir
+            if d.find(stdnum.lower()) > 0:
+                group_dirs.append(d)
+    if len(group_dirs) == 0:
+        logging.info("No submission found for: " + str(group.members))
+        group.comment = "No submissions for group."
+    elif len(group_dirs) == 1:
+        logging.info("Directory : \"{}\" assigned to: {}".format(str(group_dirs[0]), str(group.members)))
+        group.directory = BASE_DIR + group_dirs[0]
+        group.get_submissiontime()
+    else:
+        logging.info("Multiple submissions for: {}".format(str(group.members)))
+        group.comment = "Multiple submissions for group not marked."
 
-
-    #groupman.set_dir(groupnum, 
-        # try match a dir for member 1
-    #    if d.find(stdnums[
-    # try match a dir for member 2
-    # if two dirs defined:
-        # comment = multiple submissions, mark = 0
-    # if no dirs, do nothing
-    # if only one dir, assign to group
+groupman.restart()
+while (groupman.has_next() == True):
+    group = groupman.next()
+    print(str(group.members) + "  :  " + str(group.directory))
 
 # for each group:
-# assert that only one member has submitted.
-# if multiple submissions, assign 0 to the group.
 # take the submission and move it to a working directory. 
 # read timestamp. Compute scaling factor
 # assert compile and link

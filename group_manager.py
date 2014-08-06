@@ -1,5 +1,6 @@
 import csv
 import logging
+import time
 
 class Group:
     def __init__(self, members):
@@ -8,6 +9,12 @@ class Group:
         self.directory = None
         self.mark = -1
         self.submissiontime = None
+    
+    def get_submissiontime(self):
+        with open(str(self.directory) + "/timestamp.txt") as timefile:
+            timestamp = timefile.readline() # will return something like: '20140805211624959'
+            self.submissiontime = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
+            logging.info("Submissiontime of {} assigned to {}".format(time.strftime("%a:%H:%M", self.submissiontime), str(self.members)))
 
 class GroupManager:
     def __init__(self, filename):
