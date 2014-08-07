@@ -33,17 +33,18 @@ while (groupman.has_next() == True):
         logging.info("No submission found for: " + str(group.members))
         group.comment = "No submissions for group."
     elif len(group_dirs) == 1:
-        logging.info("Directory : \"{}\" assigned to: {}".format(str(group_dirs[0]), str(group.members)))
+        logging.debug("Directory : \"{}\" assigned to: {}".format(str(group_dirs[0]), str(group.members)))
         group.directory = BASE_DIR + group_dirs[0]
         group.get_submissiontime()
+        group.build_submission()
     else:
         logging.info("Multiple submissions for: {}".format(str(group.members)))
         group.comment = "Multiple submissions for group not marked."
 
-groupman.restart()
-while (groupman.has_next() == True):
-    group = groupman.next()
-    print(str(group.members) + "  :  " + str(group.directory))
+#groupman.restart()
+#while (groupman.has_next() == True):
+#    group = groupman.next()
+#    print(str(group.members) + "  :  " + str(group.directory))
 
 # for each group:
 # take the submission and move it to a working directory. 
