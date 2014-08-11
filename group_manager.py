@@ -7,11 +7,15 @@ import subprocess
 class Group:
     def __init__(self, members):
         self.members = members
-        self.comment = "Undefined"
+        self.comment_str = ""
         self.directory = None
         self.mark = -1
         self.submissiontime = None
         self.src_file = None
+
+    def comment(self, to_append):
+        self.comment_str += str(to_append)
+        self.comment_str += "\n"
     
     def get_submissiontime(self):
         with open(str(self.directory) + "/timestamp.txt") as timefile:
@@ -24,37 +28,49 @@ class Group:
         - first check for a main.s file
         - if not found, check if only 1 file submitted
         - if multiple files submitted, check if only one ends in a .s extension'''
-        if len(all_files) == 1:
-            self.src_file = all_files[0]
-        else:
-            assembly_files = [fi for fi in all_files if fi.endswith(".s")]
-            if len(assembly_files) == 1:
-                self.src_file = assembly_files[0]
-        
-        if self.src_file is None:
-            logging.info("No file among {} matched for group: ".format(all_files, self.members))
-
-    def build_submission(self):
         os.chdir(self.directory + "/Submission attachment(s)/")
         all_files = os.listdir()
-        if len(all_files) is not 1:
-            self.comment = "Multiple files found. I don't know which to mark."
-            logging.info("Multiple files found for {}".format(self.members))
+        assembly_files = [fi for fi in all_files if fi.endswith(".s")]
+        if len(assembly_files) == 1:
+            self.src_file = assembly_files[0]
+            return True
+        elif len(assembly_files) == 0:
+            logging.info("No file among {} matched for group: ".format(all_files, self.members))
+            self.comment("No suitable source file found")
             mark = 0
+        else:
+            self.comment("Multiple .s files found. I don't know which to mark.")
+            logging.info("Multiple .s files found for {}".format(self.members))
+        return False
+
+    def build_submission(self):
+        if self.find_src_file() == False:
             return
-        if all_files[0].endswith(".s") != True:
-            self.comment = "No file ending in .s found"
-            logging.info("{} for group {}".format(self.comment, self.members))
-            mark = 0
-            return
-        self.src_file = all_files[0]
         logging.debug("Attempting to build {} for group: {}".format(self.src_file, self.members))
-        self.comment += "Attempting to compile file: \n".format(self.src_file)
-        as_proc = subprocess.Popen(["arm-none-eabi-as", "-o", "main.o", self.src_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.comment("Attempting to compile file: {}".format(self.src_file))
+        as_proc = subprocess.Popen(["arm-none-eabi-as", "-mcpu=cortex-m0", "-mthumb", "-g", "-o", "main.o", self.src_file], \
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if (as_proc.wait() != 0):
-            print(as_proc.communicate())
+            error_message = as_proc.communicate()
+            self.comment("Compile failed. Awarding 0. Error message:")
+            self.comment(error_message[0])
+            self.comment(error_message[1])
+            logging.info("For group {} got error: \n {}".format(self.members, self.comment_str))
             mark = 0
             return
+        self.comment("Compile succeeded. Attempting to link.")
+        ld_proc = subprocess.Popen(["arm-none-eabi-ld", "-Ttext=0x08000000", "-o", "main.elf", "main.o"], \
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if (ld_proc.wait() != 0):
+            error_message = ld_proc.communicate()
+            self.comment("Link failed. Awarding 0. Error message:")
+            self.comment(error_message[0])
+            self.comment(error_message[1])
+            logging.info("For group {} got error: \n {}".format(self.members, self.comment_str))
+            mark = 0
+            return
+        self.comment("Link succeeded. Now running tests")
+
 
 class GroupManager:
     def __init__(self, filename):

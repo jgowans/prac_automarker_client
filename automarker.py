@@ -31,15 +31,15 @@ while (groupman.has_next() == True):
                 group_dirs.append(d)
     if len(group_dirs) == 0:
         logging.info("No submission found for: " + str(group.members))
-        group.comment = "No submissions for group."
+        group.comment("No submissions for group.")
     elif len(group_dirs) == 1:
         logging.debug("Directory : \"{}\" assigned to: {}".format(str(group_dirs[0]), str(group.members)))
         group.directory = BASE_DIR + group_dirs[0]
         group.get_submissiontime()
         group.build_submission()
     else:
-        logging.info("Multiple submissions for: {}".format(str(group.members)))
-        group.comment = "Multiple submissions for group not marked."
+        logging.info("Multiple students submitted for: {}".format(str(group.members)))
+        group.comment("Multiple studetns from the groups submitted. Not marked.")
 
 #groupman.restart()
 #while (groupman.has_next() == True):
