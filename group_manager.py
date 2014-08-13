@@ -3,6 +3,7 @@ import logging
 import time
 import os
 import subprocess
+import elf_parser
 
 class Group:
     def __init__(self, members):
@@ -70,6 +71,7 @@ class Group:
             mark = 0
             return
         self.comment("Link succeeded. Now running tests")
+        elf_parser.get_address_of_label("main.elf", "copy_to_RAM_complete")
 
 
 class GroupManager:

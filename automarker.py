@@ -13,10 +13,6 @@ logging.info("Automarker beginning execution")
 #interface = interface_lib.InterrigatorInterface()
 
 groupman = group_manager.GroupManager("/tmp/groups.csv")
-# rename all submission folders to only be student numbers
-#for old_dir in os.walk("/tmp/Practical1/").send(None)[1]:
-#    new_dir = old_dir[old_dir.find('(') + 1 : old_dir.find(')')].upper()
-#    os.rename("/tmp/Practical1/" + old_dir, "/tmp/Practical1/" + new_dir)
 
 # iterate through the folder, assigning a directory to each group
 os.chdir(BASE_DIR)
