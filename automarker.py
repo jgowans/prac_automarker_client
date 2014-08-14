@@ -20,6 +20,7 @@ sub_dirs = os.listdir()
 groupman.restart()
 while (groupman.has_next() == True):
     group = groupman.next()
+    logging.info("====Starting to deal with group: {g}====".format(g=group.members))
     group_dirs = []
     for d in sub_dirs:
         for stdnum in group.members:
@@ -29,13 +30,20 @@ while (groupman.has_next() == True):
         logging.info("No submission found for: " + str(group.members))
         group.comment("No submissions for group.")
     elif len(group_dirs) == 1:
-        logging.debug("Directory : \"{}\" assigned to: {}".format(str(group_dirs[0]), str(group.members)))
+        logging.debug("Private: Directory \"{}\" assigned to group".format(str(group_dirs[0]), str(group.members)))
+        group.comment("Submission directory from one group member found. Proceeding.")
         group.directory = BASE_DIR + group_dirs[0]
         group.get_submissiontime()
+        group.find_src_file()
         group.build_submission()
+        group.run_tests()
+        group.scale_by_factor()
+        group.write_comments_file()
+        group.clean()
     else:
-        logging.info("Multiple students submitted for: {}".format(str(group.members)))
         group.comment("Multiple studetns from the groups submitted. Not marked.")
+
+groupman.generate_marks_file()
 
 #groupman.restart()
 #while (groupman.has_next() == True):

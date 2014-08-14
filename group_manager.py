@@ -3,26 +3,27 @@ import logging
 import time
 import os
 import subprocess
-import elf_parser
+import prac1
 
 class Group:
     def __init__(self, members):
         self.members = members
-        self.comment_str = ""
+        self.comment_arr = []
         self.directory = None
         self.mark = -1
-        self.submissiontime = None
+        self.submissioni_time = None
         self.src_file = None
+        self.full_path_to_elf = None
 
     def comment(self, to_append):
-        self.comment_str += str(to_append)
-        self.comment_str += "\n"
+        logging.info(to_append)
+        self.comment_arr.append(str(to_append))
     
     def get_submissiontime(self):
         with open(str(self.directory) + "/timestamp.txt") as timefile:
             timestamp = timefile.readline() # will return something like: '20140805211624959'
-            self.submissiontime = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
-            logging.debug("Submissiontime of {} assigned to {}".format(time.strftime("%a:%H:%M", self.submissiontime), str(self.members)))
+            self.submission_time = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
+            self.comment("Submissiontime of {} assigned".format(time.strftime("%a:%H:%M", self.submission_time)))
 
     def find_src_file(self):
         '''The matchin process is to 
@@ -34,20 +35,18 @@ class Group:
         assembly_files = [fi for fi in all_files if fi.endswith(".s")]
         if len(assembly_files) == 1:
             self.src_file = assembly_files[0]
-            return True
-        elif len(assembly_files) == 0:
-            logging.info("No file among {} matched for group: ".format(all_files, self.members))
-            self.comment("No suitable source file found")
-            mark = 0
+            self.comment("Only 1 .s file submitted, namely: {}".format(self.src_file))
+        elif "main.s" in assembly_files:
+            self.src_file = "main.s"
+            self.comment("Multiple .s files submitted: using main.s")
         else:
-            self.comment("Multiple .s files found. I don't know which to mark.")
-            logging.info("Multiple .s files found for {}".format(self.members))
-        return False
+            self.comment("No suitable source file found out of:".format(str(all_files)))
+            mark = 0
 
     def build_submission(self):
-        if self.find_src_file() == False:
+        if self.src_file == None:
+            self.comment("Can't build - no source file")
             return
-        logging.debug("Attempting to build {} for group: {}".format(self.src_file, self.members))
         self.comment("Attempting to compile file: {}".format(self.src_file))
         as_proc = subprocess.Popen(["arm-none-eabi-as", "-mcpu=cortex-m0", "-mthumb", "-g", "-o", "main.o", self.src_file], \
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -56,7 +55,6 @@ class Group:
             self.comment("Compile failed. Awarding 0. Error message:")
             self.comment(error_message[0])
             self.comment(error_message[1])
-            logging.info("For group {} got error: \n {}".format(self.members, self.comment_str))
             mark = 0
             return
         self.comment("Compile succeeded. Attempting to link.")
@@ -67,12 +65,31 @@ class Group:
             self.comment("Link failed. Awarding 0. Error message:")
             self.comment(error_message[0])
             self.comment(error_message[1])
-            logging.info("For group {} got error: \n {}".format(self.members, self.comment_str))
             mark = 0
             return
-        self.comment("Link succeeded. Now running tests")
-        elf_parser.get_address_of_label("main.elf", "copy_to_RAM_complete")
+        self.full_path_to_elf = self.directory + "/Submission attachment(s)/main.elf"
+        self.comment("Link succeeded")
 
+    def run_tests(self):
+        if self.full_path_to_elf == None:
+            self.comment("Can't run tests as no elf exists")
+            mark = 0
+        else:
+            self.comment("Starting to run tests")
+            # would probably be better to do this with inheretance... 
+            self.mark = prac1.run_tests(self.full_path_to_elf, self.comment)
+            self.comment("Returned from running tests")
+
+    def scale_by_factor(self):
+        self.comment("Mark before scaling: {}".format(self.mark))
+        self.mark = prac1.scale_mark(self.mark, self.submission_time, self.comment)
+        self.comment("Mark after scaling: {}".format(self.mark))
+
+    def write_comments_file(self):
+        pass
+
+    def clean(self):
+        self.comment_arr = None # just free some memory
 
 class GroupManager:
     def __init__(self, filename):
@@ -103,7 +120,8 @@ class GroupManager:
         self.group_pointer += 1
         return self.groups[self.group_pointer - 1]
 
-    def generate_output():
+    def generate_marks_file(self):
+        logging.info("Now generating marks file")
         pass
 
 
