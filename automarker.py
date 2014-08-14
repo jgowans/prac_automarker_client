@@ -43,7 +43,7 @@ while (groupman.has_next() == True):
     else:
         group.comment("Multiple studetns from the groups submitted. Not marked.")
 
-groupman.generate_marks_file()
+groupman.generate_marks_file("/tmp/Practical1/grades.csv", "/tmp/Practical1/grades_new.csv")
 
 #groupman.restart()
 #while (groupman.has_next() == True):

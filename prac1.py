@@ -20,7 +20,7 @@ def run_tests(elf, comment):
             gdb.load()
             # run to copy_to_RAM_complete
             if gdb.run_to_label("copy_to_RAM_complete") == False: # could not find label
-                comment("Could not find label: copy_to_RAM_complete. Mark = 0")
+                comment("Mark = 0")
                 return mark
             comment("Now verifying the first four words in RAM")
             # verify the 4 words, awarding a mark for each
@@ -29,27 +29,34 @@ def run_tests(elf, comment):
             mark += verify_word(gdb, comment, 0x20000008, 0x00002233)
             mark += verify_word(gdb, comment, 0x2000000c, 0x55555555)
             # modify the 4 words
-            comment("Modifying 0x20000000 to be 0xFF")
-            gdb.write_word(0x20000000, 0xFF)
+            comment("Modifying 0x20000000 to be 0xCC0000BB")
+            gdb.write_word(0x20000000, 0xCC0000BB)
             comment("Modifying 0x20000004 to be 0xAA")
             gdb.write_word(0x20000004, 0xAA)
             comment("Modifying 0x20000008 to be 0x42")
             gdb.write_word(0x20000008, 0x42)
             comment("Modifying 0x2000000c to be 0x69")
             gdb.write_word(0x2000000c, 0x69)
-            # move data into 0x20000020
-            gdb.write_word(0x20000020, 0x55)
+            # move data into 0x20000020, same data as 0x20000010
+            gdb.write_word(0x20000020, 0xCC000011)
             # run to infinite_loop
             if gdb.run_to_label("infinite_loop") == False:
-                comment("Could not find label: infinite_loop. Aborting.")
+                comment("Aborting.")
                 return mark
             # verify the 4 words
-            mark += verify_word(gdb, comment, 0x20000010, 0x55)
-            mark += verify_word(gdb, comment, 0x20000014, 0x1eb)
+            mark += verify_word(gdb, comment, 0x20000010, 0xCC000011)
+            mark += verify_word(gdb, comment, 0x20000014, 0xCC0001A7)
             mark += verify_word(gdb, comment, 0x20000018, 0xE8)
             mark += verify_word(gdb, comment, 0x2000001c, 0x2bd4)
             # query pattern on LEDs
-    
+            led_data = ii.read_port(0)
+            comment("Bonus: data read from LEDs as: {a:#x}, and should be 0x11".format(a = led_data))
+            if led_data == 0x11:
+                comment("Bonus correct! :-). 2/0")
+                mark += 2
+            else:
+                comment("Bonus not done. 0/0")
+
     comment("All tests complete. Mark: {m}".format(m=mark))
     return mark
 

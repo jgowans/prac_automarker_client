@@ -86,7 +86,9 @@ class Group:
         self.comment("Mark after scaling: {}".format(self.mark))
 
     def write_comments_file(self):
-        pass
+        with open(self.directory + "/comments.txt", "w") as f:
+            for c in self.comment_arr:
+                f.write(c + "\r\n")
 
     def clean(self):
         self.comment_arr = None # just free some memory
@@ -120,9 +122,22 @@ class GroupManager:
         self.group_pointer += 1
         return self.groups[self.group_pointer - 1]
 
-    def generate_marks_file(self):
+    def generate_marks_file(self, csvfileold, csvfilenew):
+        rows =[]
+        rows.append(["ID", "grade"])
         logging.info("Now generating marks file")
-        pass
+#        with open(csvfileold, 'r') as old_fi:
+#           old_reader = csv.reader(old_fi)
+#           for row in old_reader:
+#             rows.append(row)
+
+        for group in self.groups:
+            for member in group.members:
+                rows.append([member, str(group.mark)])
+        with open(csvfilenew, 'w') as fi:
+            new_writer = csv.writer(fi)
+            for row in rows:
+                new_writer.writerow(row)
 
 
 

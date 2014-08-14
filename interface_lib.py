@@ -65,13 +65,18 @@ class GDBInterface:
         try:
             address = elf_parser.get_address_of_label(self.fi, label) # this will throw an exception if label not found
         except:
+            self.comment("Could not find label: {l}".format(l = label))
             return False
         self.comment("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
         self.comment("break *{a:#X}".format(a = address))
         self.gdb.sendline("break *{a:#x}".format(a = address))
         self.gdb.expect("\(gdb\)")
         self.gdb.sendline("continue")
-        self.gdb.expect("Breakpoint.*\(gdb\)")
+        try:
+            self.gdb.expect("Breakpoint.*\(gdb\)")
+        except:
+            self.comment("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
+            return False
         self.comment("Hit breakpoint")
         return True
 
@@ -104,15 +109,22 @@ class InterrogatorInterface:
         self.ser.write("NRST {}\r".format(state).encode())
         self.ser.readlines()
 
-    def set_pin(pin):
+    def set_pin(self, pin):
         pass
-    def clear_pin(pin):
+    def clear_pins(self, pin):
         pass
-    def write_port(port):
+    def write_port(self, port):
         pass
-    def read_pin(pin):
+    def read_pin(self, pin):
         pass
-    def read_port(port):
-        pass
+    def read_port(self, port):
+        self.ser.flushInput()
+        self.ser.write("GPIO_READ 0\r".encode())
+        resp =self.ser.readlines() #something like: [b'GPIO_READ 0\r\n', b'INPUTS: AA\r\n', b'> ']
+        if len(resp) >= 2: # we got something back
+            assert(resp[0] == b'GPIO_READ 0\r\n') 
+            inputs = resp[1] # something like:  b'INPUTS: AA\r\n'
+            inputs = inputs.split() # [b'INPUTS:', b'AA']
+            return int(inputs[1], 16)
 
 
