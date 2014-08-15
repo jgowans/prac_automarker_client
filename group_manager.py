@@ -10,7 +10,7 @@ class Group:
         self.members = members
         self.comment_arr = []
         self.directory = None
-        self.mark = -1
+        self.mark = 0
         self.submissioni_time = None
         self.src_file = None
         self.full_path_to_elf = None
@@ -41,7 +41,7 @@ class Group:
             self.comment("Multiple .s files submitted: using main.s")
         else:
             self.comment("No suitable source file found out of:".format(str(all_files)))
-            mark = 0
+            self.mark = 0
 
     def build_submission(self):
         if self.src_file == None:
@@ -55,7 +55,7 @@ class Group:
             self.comment("Compile failed. Awarding 0. Error message:")
             self.comment(error_message[0])
             self.comment(error_message[1])
-            mark = 0
+            self.mark = 0
             return
         self.comment("Compile succeeded. Attempting to link.")
         ld_proc = subprocess.Popen(["arm-none-eabi-ld", "-Ttext=0x08000000", "-o", "main.elf", "main.o"], \
@@ -65,7 +65,7 @@ class Group:
             self.comment("Link failed. Awarding 0. Error message:")
             self.comment(error_message[0])
             self.comment(error_message[1])
-            mark = 0
+            self.mark = 0
             return
         self.full_path_to_elf = self.directory + "/Submission attachment(s)/main.elf"
         self.comment("Link succeeded")
@@ -73,7 +73,7 @@ class Group:
     def run_tests(self):
         if self.full_path_to_elf == None:
             self.comment("Can't run tests as no elf exists")
-            mark = 0
+            self.mark = 0
         else:
             self.comment("Starting to run tests")
             # would probably be better to do this with inheretance... 
@@ -88,7 +88,7 @@ class Group:
     def write_comments_file(self):
         with open(self.directory + "/comments.txt", "w") as f:
             for c in self.comment_arr:
-                f.write(c + "\r\n")
+                f.write(c + "<br>\n")
 
     def clean(self):
         self.comment_arr = None # just free some memory
@@ -124,7 +124,9 @@ class GroupManager:
 
     def generate_marks_file(self, csvfileold, csvfilenew):
         rows =[]
-        rows.append(["ID", "grade"])
+        rows.append(["Practical1", "Points"])
+        rows.append([])
+        rows.append(["Display ID","ID","Last Name","First Name","grade"])
         logging.info("Now generating marks file")
 #        with open(csvfileold, 'r') as old_fi:
 #           old_reader = csv.reader(old_fi)
@@ -133,7 +135,7 @@ class GroupManager:
 
         for group in self.groups:
             for member in group.members:
-                rows.append([member, str(group.mark)])
+                rows.append([member.lower(), member.lower(), "", "", str(group.mark), ""])
         with open(csvfilenew, 'w') as fi:
             new_writer = csv.writer(fi)
             for row in rows:
