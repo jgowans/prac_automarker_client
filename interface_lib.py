@@ -4,7 +4,6 @@ import elf_parser
 import re
 import shlex, subprocess
 import time
-import logging
 
 class OpenOCD:
     def __init__(self, comment):
@@ -90,7 +89,13 @@ class GDBInterface:
         set_string = "set {{int}}{a:#x} = {d:#x}".format(a = address, d = data)
         self.gdb.sendline(set_string)
         self.gdb.expect(re.escape("{}\r\n(gdb)".format(set_string)))
- 
+    
+    def delete_all_breakpoints(self):
+        self.gdb.sendline("delete")
+        self.gdb.expect(re.escape("Delete all breakpoints? (y or n) "))
+        self.gdb.sendline("y")
+        self.gdb.expect("\(gdb\)")
+        self.comment("All previous breakpoints deleted")
 
 class InterrogatorInterface:
     def __init__(self):
@@ -100,9 +105,8 @@ class InterrogatorInterface:
         self.ser.flushInput()
         self.ser.write("PING 1\r".encode())
         resp = self.ser.readlines()
-        if (len(resp) < 2) or (resp[1] ==  b'PONG!\r\n'):
-            return "Communications with interrogator extablished"
-        raise Exception("No comms with interrogator.")
+        InterrogatorInterface.assert_response(resp, "PONG!")
+        return "Communications with interrogator established"
 
     def reset(self, state):
         self.ser.flushInput()
@@ -110,9 +114,21 @@ class InterrogatorInterface:
         self.ser.readlines()
 
     def set_pin(self, pin):
-        pass
-    def clear_pins(self, pin):
-        pass
+        self.ser.flushInput()
+        self.ser.write("GPIO_SET {p}\r".format(p = pin).encode())
+        resp = self.ser.readlines()
+        InterrogatorInterface.assert_response(resp, "OK")
+    def clear_pin(self, pin):
+        self.ser.flushInput()
+        self.ser.write("GPIO_CLEAR {p}\r".format(p = pin).encode())
+        resp = self.ser.readlines()
+        InterrogatorInterface.assert_response(resp, "OK")
+    def highz_pin(self, pin):
+        self.ser.flushInput()
+        self.ser.write("GPIO_HIGHZ {p}\r".format(p = pin).encode())
+        resp = self.ser.readlines()
+        InterrogatorInterface.assert_response(resp, "OK")
+
     def write_port(self, port):
         pass
     def read_pin(self, pin):
@@ -126,5 +142,11 @@ class InterrogatorInterface:
             inputs = resp[1] # something like:  b'INPUTS: AA\r\n'
             inputs = inputs.split() # [b'INPUTS:', b'AA']
             return int(inputs[1], 16)
+
+    def assert_response(response, expected):
+        if (len(response) < 2) or (response[1].strip().decode() !=  expected):
+            print(response)
+            raise Exception("No comms with interrogator.")
+
 
 

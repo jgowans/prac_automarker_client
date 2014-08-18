@@ -1,9 +1,10 @@
 import csv
 import logging
+logger = logging.getLogger(__name__)
 import time
 import os
 import subprocess
-import prac1
+import prac2
 
 class Group:
     def __init__(self, members):
@@ -16,7 +17,7 @@ class Group:
         self.full_path_to_elf = None
 
     def comment(self, to_append):
-        logging.info(to_append)
+        logger.info(to_append)
         self.comment_arr.append(str(to_append))
     
     def get_submissiontime(self):
@@ -40,13 +41,24 @@ class Group:
             self.src_file = "main.s"
             self.comment("Multiple .s files submitted: using main.s")
         else:
-            self.comment("No suitable source file found out of:".format(str(all_files)))
+            self.comment("No suitable source file found out of: {fi}".format(fi = all_files))
             self.mark = 0
 
     def build_submission(self):
         if self.src_file == None:
             self.comment("Can't build - no source file")
             return
+        self.comment("Checking start of file for student numbers")
+        with open(self.src_file) as fi:
+            l0 = fi.readline()
+            stdnums_from_file = l0.split()
+            stdnums_from_file = [s.strip('@ /') for s in stdnums_from_file] # remove any comment symbols or white space
+            for grouped_student in self.members:
+                if grouped_student not in stdnums_from_file:
+                    self.comment("Student number: {} not found in starting line of source file".format(grouped_student))
+                    self.comment("In future, the compile will abort here. Bypassing error this time.")
+                    # return
+        self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
         as_proc = subprocess.Popen(["arm-none-eabi-as", "-mcpu=cortex-m0", "-mthumb", "-g", "-o", "main.o", self.src_file], \
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -77,12 +89,12 @@ class Group:
         else:
             self.comment("Starting to run tests")
             # would probably be better to do this with inheretance... 
-            self.mark = prac1.run_tests(self.full_path_to_elf, self.comment)
+            self.mark = prac2.run_tests(self.full_path_to_elf, self.comment)
             self.comment("Returned from running tests")
 
     def scale_by_factor(self):
         self.comment("Mark before scaling: {}".format(self.mark))
-        self.mark = prac1.scale_mark(self.mark, self.submission_time, self.comment)
+        self.mark = prac2.scale_mark(self.mark, self.submission_time, self.comment)
         self.comment("Mark after scaling: {}".format(self.mark))
 
     def write_comments_file(self):
@@ -95,7 +107,7 @@ class Group:
 
 class GroupManager:
     def __init__(self, filename):
-        logging.info("initialising a groups manager")
+        logger.info("initialising a groups manager")
         self.groups = [] # a dict mapping a group number to a list of stdnums
         self.group_pointer = 0
         with open(filename) as groupsfile:
@@ -105,7 +117,7 @@ class GroupManager:
                 if group.count('') == 1:
                     group.remove('')
                 self.groups.append(Group(group))
-        logging.info("group creating completed with a total of {groupnums} groups.".format(groupnums=len(self.groups)))
+        logger.info("group creating completed with a total of {groupnums} groups.".format(groupnums=len(self.groups)))
 
     def has_next(self):
         if self.group_pointer < len(self.groups):
@@ -117,30 +129,23 @@ class GroupManager:
 
     def next(self):
         if self.group_pointer == len(self.groups):
-            logging.error("tried to acces group after no more groups")
+            logger.error("tried to acces group after no more groups")
             raise Exception
         self.group_pointer += 1
         return self.groups[self.group_pointer - 1]
 
-    def generate_marks_file(self, csvfileold, csvfilenew):
+    def generate_marks_file(self, csvfilenew):
         rows =[]
-        rows.append(["Practical1", "Points"])
+        rows.append(["Practical2", "Points"])
         rows.append([])
         rows.append(["Display ID","ID","Last Name","First Name","grade"])
-        logging.info("Now generating marks file")
-#        with open(csvfileold, 'r') as old_fi:
-#           old_reader = csv.reader(old_fi)
-#           for row in old_reader:
-#             rows.append(row)
 
         for group in self.groups:
             for member in group.members:
-                rows.append([member.lower(), member.lower(), "", "", str(group.mark), ""])
+                rows.append([member.lower(), member.lower(), "", "", str(group.mark),])
         with open(csvfilenew, 'w') as fi:
             new_writer = csv.writer(fi)
             for row in rows:
                 new_writer.writerow(row)
-
-
 
 
