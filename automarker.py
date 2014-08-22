@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+PRACNUMBER = "3"
+
 import os
 import logging
 import time
-logging.basicConfig(filename = "/tmp/prac2_{t}.log".format(t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())), \
+logging.basicConfig(filename = "/tmp/prac{p}_{t}.log".format(p = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())), \
         level=logging.INFO, format="%(asctime)s:" + logging.BASIC_FORMAT)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
@@ -13,11 +15,10 @@ logger = logging.getLogger(__name__)
 import csv
 import group_manager
 
-BASE_DIR = "/tmp/Practical2/"
+BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
 
 logger.info("Automarker beginning execution")
 
-#interface = interface_lib.InterrigatorInterface()
 
 groupman = group_manager.GroupManager("/tmp/groups.csv")
 
@@ -30,16 +31,19 @@ while (groupman.has_next() == True):
     logger.info("====Starting to deal with group: {g}====".format(g=group.members))
     group_dirs = []
     for d in sub_dirs:
+        directory_match = True 
         for stdnum in group.members:
-            if d.find(stdnum.lower()) > 0:
-                group_dirs.append(d)
+            if stdnum not in d.upper():
+                directory_match = False
+        if directory_match == True:
+             group_dirs.append(BASE_DIR + d)
     if len(group_dirs) == 0:
         logger.info("No submission found for: " + str(group.members))
         group.comment("No submissions for group.")
     elif len(group_dirs) == 1:
-        logger.debug("Private: Directory \"{}\" assigned to group".format(str(group_dirs[0]), str(group.members)))
+        group.comment("Directory \"{}\" assigned to group".format(str(group_dirs[0]), str(group.members)))
         group.comment("Submission directory from one group member found. Proceeding.")
-        group.directory = BASE_DIR + group_dirs[0]
+        group.directory = group_dirs[0]
         group.get_submissiontime()
         group.find_src_file()
         group.build_submission()
@@ -48,10 +52,11 @@ while (groupman.has_next() == True):
         group.write_comments_file()
         group.clean()
     else:
-        group.comment("Multiple studetns from the groups submitted. Not marked.")
+        group.comment("This should never happen. Contact me.")
 
 logger.info("Generating marks file")
-groupman.generate_marks_file("/tmp/Practical2/grades.csv")
+groupman.generate_marks_file("/tmp/Practical{p}/grades.csv".format(p = PRACNUMBER), \
+        "/tmp/Practical{p}/grades_new.csv".format(p = PRACNUMBER))
 
 #groupman.restart()
 #while (groupman.has_next() == True):

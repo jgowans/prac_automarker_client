@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 import time
 import os
 import subprocess
-import prac2
+import prac3
 
 class Group:
     def __init__(self, members):
@@ -50,14 +50,11 @@ class Group:
             return
         self.comment("Checking start of file for student numbers")
         with open(self.src_file) as fi:
-            l0 = fi.readline()
-            stdnums_from_file = l0.split()
-            stdnums_from_file = [s.strip('@ /') for s in stdnums_from_file] # remove any comment symbols or white space
-            for grouped_student in self.members:
-                if grouped_student not in stdnums_from_file:
-                    self.comment("Student number: {} not found in starting line of source file".format(grouped_student))
-                    self.comment("In future, the compile will abort here. Bypassing error this time.")
-                    # return
+            line0 = fi.readline()
+            for stdnum in self.members:
+                if stdnum not in line0.upper():
+                    self.comment("Student number: {s} not found in starting line of source file".format(s = stdnum))
+                    return
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
         as_proc = subprocess.Popen(["arm-none-eabi-as", "-mcpu=cortex-m0", "-mthumb", "-g", "-o", "main.o", self.src_file], \
@@ -89,12 +86,12 @@ class Group:
         else:
             self.comment("Starting to run tests")
             # would probably be better to do this with inheretance... 
-            self.mark = prac2.run_tests(self.full_path_to_elf, self.comment)
+            self.mark = prac3.run_tests(self.full_path_to_elf, self.comment)
             self.comment("Returned from running tests")
 
     def scale_by_factor(self):
         self.comment("Mark before scaling: {}".format(self.mark))
-        self.mark = prac2.scale_mark(self.mark, self.submission_time, self.comment)
+        self.mark = prac3.scale_mark(self.mark, self.submission_time, self.comment)
         self.comment("Mark after scaling: {}".format(self.mark))
 
     def write_comments_file(self):
@@ -134,16 +131,30 @@ class GroupManager:
         self.group_pointer += 1
         return self.groups[self.group_pointer - 1]
 
-    def generate_marks_file(self, csvfilenew):
+    def generate_marks_file(self, csv_old, csv_new):
         rows =[]
-        rows.append(["Practical2", "Points"])
-        rows.append([])
-        rows.append(["Display ID","ID","Last Name","First Name","grade"])
+        with open(csv_old) as fi:
+            old_reader = csv.reader(fi)
+            for row in old_reader:
+                rows.append(row)
 
         for group in self.groups:
-            for member in group.members:
-                rows.append([member.lower(), member.lower(), "", "", str(group.mark),])
-        with open(csvfilenew, 'w') as fi:
+            group_row = None # this will be a reference to the group's row
+            if group.directory is not None: # ensure they submitted with a valid directory
+                for member in group.members:
+                    for row_to_check in rows:
+                        if (len(row_to_check) == 4) and (member in row_to_check[0]): # std num found in Group column
+                            if group_row == None: # not yet assigned - assign directly
+                                group_row = row_to_check
+                            else: # already assigned - ensure new assignment matches old
+                                if row_to_check is not group_row:
+                                    raise Exception("Group {g} found in two rows. 1: {r1}. 2: {r2}".format(g=group.members, \
+                                            r1 = group_row, r2 = row_to_check))
+                if group_row == None:
+                    raise Exception("Group {g} submitted but no matching row found".format(g = group.members))
+                group_row[3] = group.mark # group_row should be a reference to a row in rows, so this should update rows.
+        # write back        
+        with open(csv_new, 'w') as fi:
             new_writer = csv.writer(fi)
             for row in rows:
                 new_writer.writerow(row)
