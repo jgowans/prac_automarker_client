@@ -79,11 +79,12 @@ class GDBInterface:
         self.gdb.sendline("continue")
         try:
             self.gdb.expect("Breakpoint.*\(gdb\)")
+            self.comment("Hit breakpoint")
+            self.delete_all_breakpoints()
+            return True
         except:
             self.comment("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
             return False
-        self.comment("Hit breakpoint")
-        return True
 
     def read_word(self, address):
         self.gdb.sendline("x/1wx {a:#x}".format(a = address))

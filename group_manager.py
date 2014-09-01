@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 import time
 import os
 import subprocess
-import prac3
+import prac4
 
 class Group:
     def __init__(self, members):
@@ -86,12 +86,12 @@ class Group:
         else:
             self.comment("Starting to run tests")
             # would probably be better to do this with inheretance... 
-            self.mark = prac3.run_tests(self.full_path_to_elf, self.comment)
+            self.mark = prac4.run_tests(self.full_path_to_elf, self.comment)
             self.comment("Returned from running tests")
 
     def scale_by_factor(self):
         self.comment("Mark before scaling: {}".format(self.mark))
-        self.mark = prac3.scale_mark(self.mark, self.submission_time, self.comment)
+        self.mark = prac4.scale_mark(self.mark, self.submission_time, self.comment)
         self.comment("Mark after scaling: {}".format(self.mark))
 
     def write_comments_file(self):
