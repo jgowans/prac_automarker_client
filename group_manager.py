@@ -4,7 +4,9 @@ logger = logging.getLogger(__name__)
 import time
 import os
 import subprocess
+import elf_parser
 import prac4
+
 
 class Group:
     def __init__(self, members):
@@ -15,6 +17,7 @@ class Group:
         self.submissioni_time = None
         self.src_file = None
         self.full_path_to_elf = None
+        self.text_size = 0
 
     def comment(self, to_append):
         logger.info(to_append)
@@ -88,6 +91,7 @@ class Group:
             # would probably be better to do this with inheretance... 
             self.mark = prac4.run_tests(self.full_path_to_elf, self.comment)
             self.comment("Returned from running tests")
+            self.text_size = elf_parser.get_text_size(self.full_path_to_elf)
 
     def scale_by_factor(self):
         self.comment("Mark before scaling: {}".format(self.mark))
@@ -139,6 +143,7 @@ class GroupManager:
                 rows.append(row)
 
         for group in self.groups:
+            print("Size of elf for group {g}: {s}".format(g=group.members, s=group.text_size))
             group_row = None # this will be a reference to the group's row
             if group.directory is not None: # ensure they submitted with a valid directory
                 for member in group.members:

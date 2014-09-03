@@ -75,9 +75,9 @@ class GDBInterface:
         self.comment("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
         self.comment("break *{a:#X}".format(a = address))
         self.gdb.sendline("break *{a:#x}".format(a = address))
-        self.gdb.expect("\(gdb\)")
-        self.gdb.sendline("continue")
         try:
+            self.gdb.expect("\(gdb\)")
+            self.gdb.sendline("continue")
             self.gdb.expect("Breakpoint.*\(gdb\)")
             self.comment("Hit breakpoint")
             self.delete_all_breakpoints()

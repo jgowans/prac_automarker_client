@@ -69,32 +69,30 @@ def part2_tests(gdb, ii, comment):
         comment("Could not hit label 'increment_of_bytes_complete'. Aborting")
         return 0
     comment("Verifying incremented array in RAM")
+    mark_to_return = 2
     for idx, val in enumerate(data_array):
         address = 0x20000000 + (4*idx)
-        val_inc = 0
-        val_inc += (val + (1 << 0)) & (0xFF << 0)
-        val_inc += (val + (1 << 8)) & (0xFF << 8)
-        val_inc += (val + (1 << 16)) & (0xFF << 16)
-        val_inc += (val + (1 << 24)) & (0xFF << 24)
         data_in_RAM = gdb.read_word(address)
         for byte_offset in range(0, 3):
             # add one at the correct place, then shift the byte of interest down to LSB and select with mask
-            val_byte = ((val + (1 << 0)) >> (byte_offset * 8)) & 0xFF
-            data_byte = ((data_in_RAM + (1 << 0)) >> (byte_offset * 8)) & 0xFF
-        if data_in_RAM != val:
-            #comment("Data at address {addr:#x} should be {v:#x} but is {d:#x}".format( \
-            #        addr = address + byte_offset, v = val_byte, d = data_byte))
-            #return 0
-            pass
-    comment("Data correct in RAM. 2/2")
+            val_byte = ((val + (1 << (byte_offset * 8))) >> (byte_offset * 8)) & 0xFF
+            data_byte = ((data_in_RAM ) >> (byte_offset * 8)) & 0xFF
+        if val_byte != data_byte:
+            comment("Data at address {addr:#x} should be {v:#x} but is {d:#x}".format( \
+                    addr = address + byte_offset, v = val_byte, d = data_byte))
+            comment("Aborting verification phase. 0/2")
+            mark_to_return = 0
+            break
+    if mark_to_return == 2:
+        comment("Data correct in RAM. 2/2")
     comment("Now modifying data in RAM. Setting all words to 0x88888888")
     for word_offset in range(0, len(data_array)):
         word_addr = 0x20000000 + (word_offset*4)
         gdb.write_word(word_addr, 0x88888888)
-    comment("Setting address 0x20000008 to 0x32897788")
-    comment("This implies a max unsigned of 0x99, min unsigned of 0x32 and max signed of 0x77")
-    gdb.write_word(0x20000008, 0x32997788)
-    return 2
+    comment("Setting address 0x2000000C0 to 0x8870FA05")
+    comment("This implies a max unsigned of 0xFA, min unsigned of 0x05 and max signed of 0x70")
+    gdb.write_word(0x20000008, 0x8870FA05)
+    return mark_to_return
 
 def part3_tests(gdb, ii, comment):
     # simulate SW1 and not SW0. Should be flashing AA,55 at 0.25 seconds
@@ -103,8 +101,8 @@ def part3_tests(gdb, ii, comment):
     time.sleep(0.5)
     comment("Releasing both SW0 and SW1")
     led_data = ii.read_port(0)
-    comment("Data on LEDs should be max unsigned (0x99), and found to be {d:#X}".format(d=led_data))
-    if led_data != 0x99:
+    comment("Data on LEDs should be max unsigned (0xFA), and found to be {d:#X}".format(d=led_data))
+    if led_data != 0xFA:
         comment("Incorrect. 0/3")
         return 0
     comment("Part 3 correct. 3/3")
@@ -117,8 +115,8 @@ def part4_tests(gdb, ii, comment):
     time.sleep(0.5)
     comment("Pressing SW0 and releasing SW1")
     led_data = ii.read_port(0)
-    comment("Data on LEDs should be min unsigned (0x32), and found to be {d:#X}".format(d=led_data))
-    if led_data != 0x32:
+    comment("Data on LEDs should be min unsigned (0x05), and found to be {d:#X}".format(d=led_data))
+    if led_data != 0x05:
         comment("Incorrect. 0/2")
         return 0
     comment("Part 4 correct. 2/2")
@@ -131,8 +129,8 @@ def part5_tests(gdb, ii, comment):
     time.sleep(0.5)
     comment("Releasing SW0 and pressing SW1")
     led_data = ii.read_port(0)
-    comment("Data on LEDs should be max signed (0x77), and found to be {d:#X}".format(d=led_data))
-    if led_data != 0x77:
+    comment("Data on LEDs should be max signed (0x70), and found to be {d:#X}".format(d=led_data))
+    if led_data != 0x70:
         comment("Incorrect. 0/1")
         return 0
     comment("Part 5 correct. 1/1")
