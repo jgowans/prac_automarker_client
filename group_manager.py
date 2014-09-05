@@ -15,7 +15,7 @@ class Group:
         self.directory = None
         self.mark = 0
         self.submissioni_time = None
-        self.src_file = None
+        self.full_path_to_src = None
         self.full_path_to_elf = None
         self.text_size = 0
 
@@ -38,49 +38,32 @@ class Group:
         all_files = os.listdir()
         assembly_files = [fi for fi in all_files if fi.endswith(".s")]
         if len(assembly_files) == 1:
-            self.src_file = assembly_files[0]
+            self.src_file = self.directory + "/Submission attachment(s)/" + assembly_files[0]
             self.comment("Only 1 .s file submitted, namely: {}".format(self.src_file))
+            return True
         elif "main.s" in assembly_files:
-            self.src_file = "main.s"
+            self.src_file = self.directory + "/Submission attachment(s)/" + "main.s"
             self.comment("Multiple .s files submitted: using main.s")
+            return True
         else:
             self.comment("No suitable source file found out of: {fi}".format(fi = all_files))
-            self.mark = 0
+            return False
 
     def build_submission(self):
         if self.src_file == None:
             self.comment("Can't build - no source file")
-            return
+            return False
         self.comment("Checking start of file for student numbers")
         with open(self.src_file) as fi:
             line0 = fi.readline()
             for stdnum in self.members:
                 if stdnum not in line0.upper():
                     self.comment("Student number: {s} not found in starting line of source file".format(s = stdnum))
-                    return
+                    return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        as_proc = subprocess.Popen(["arm-none-eabi-as", "-mcpu=cortex-m0", "-mthumb", "-g", "-o", "main.o", self.src_file], \
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if (as_proc.wait() != 0):
-            error_message = as_proc.communicate()
-            self.comment("Compile failed. Awarding 0. Error message:")
-            self.comment(error_message[0])
-            self.comment(error_message[1])
-            self.mark = 0
-            return
-        self.comment("Compile succeeded. Attempting to link.")
-        ld_proc = subprocess.Popen(["arm-none-eabi-ld", "-Ttext=0x08000000", "-o", "main.elf", "main.o"], \
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if (ld_proc.wait() != 0):
-            error_message = ld_proc.communicate()
-            self.comment("Link failed. Awarding 0. Error message:")
-            self.comment(error_message[0])
-            self.comment(error_message[1])
-            self.mark = 0
-            return
-        self.full_path_to_elf = self.directory + "/Submission attachment(s)/main.elf"
-        self.comment("Link succeeded")
+        self.test_suite = Prac4Tests(self.comment, self.full_path_to_src, self.directory + "/Submission attachment(s)/")
+        return 
 
     def run_tests(self):
         if self.full_path_to_elf == None:
