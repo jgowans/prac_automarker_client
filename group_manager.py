@@ -5,7 +5,7 @@ import time
 import os
 import subprocess
 import elf_parser
-import prac4
+import prac5
 
 
 class Group:
@@ -15,9 +15,9 @@ class Group:
         self.directory = None
         self.mark = 0
         self.submissioni_time = None
-        self.full_path_to_src = None
-        self.full_path_to_elf = None
+        self.src_name = None
         self.text_size = 0
+        self.test_runner = None
 
     def comment(self, to_append):
         logger.info(to_append)
@@ -38,11 +38,11 @@ class Group:
         all_files = os.listdir()
         assembly_files = [fi for fi in all_files if fi.endswith(".s")]
         if len(assembly_files) == 1:
-            self.src_file = self.directory + "/Submission attachment(s)/" + assembly_files[0]
+            self.src_file = assembly_files[0]
             self.comment("Only 1 .s file submitted, namely: {}".format(self.src_file))
             return True
         elif "main.s" in assembly_files:
-            self.src_file = self.directory + "/Submission attachment(s)/" + "main.s"
+            self.src_file = "main.s"
             self.comment("Multiple .s files submitted: using main.s")
             return True
         else:

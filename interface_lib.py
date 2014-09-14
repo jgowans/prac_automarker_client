@@ -28,7 +28,7 @@ class GDBInterface:
         self.comment = comment
         self.fi = fi
         self.gdb = pexpect.spawn("arm-none-eabi-gdb", timeout=3)
-        self.gdb.expect("\(gdb\)")
+        self.gdb.expect_exact("(gdb)")
     def __enter__(self):
         return self
     def __exit__(self, type, value, traceback):
@@ -62,8 +62,13 @@ class GDBInterface:
     def send_continue(self):
         self.comment("Continuing code")
         self.gdb.sendline("continue")
-        self.gdb.expect("Continuing.")
+        self.gdb.expect_exact("Continuing.")
         self.comment("Code now running.")
+
+    def send_control_c(self):
+        self.comment("Sending Ctrl+C")
+        self.gdb.sendcontrol('c')
+        self.gdb.expect_exact("(gdb)")
 
     def run_to_label(self, label):
         # improve this with custom exceptions!!!!
@@ -76,7 +81,7 @@ class GDBInterface:
         self.comment("break *{a:#X}".format(a = address))
         self.gdb.sendline("break *{a:#x}".format(a = address))
         try:
-            self.gdb.expect("\(gdb\)")
+            self.gdb.expect_exact("(gdb)")
             self.gdb.sendline("continue")
             self.gdb.expect("Breakpoint.*\(gdb\)")
             self.comment("Hit breakpoint")
@@ -88,20 +93,20 @@ class GDBInterface:
 
     def read_word(self, address):
         self.gdb.sendline("x/1wx {a:#x}".format(a = address))
-        self.gdb.expect("{0:#x}:".format(address))
-        self.gdb.expect("\(gdb\)")
+        self.gdb.expect_exact("{0:#x}:".format(address))
+        self.gdb.expect_exact("(gdb)")
         return int(self.gdb.before.strip(), 16)
 
     def write_word(self, address, data):
         set_string = "set {{int}}{a:#x} = {d:#x}".format(a = address, d = data)
         self.gdb.sendline(set_string)
-        self.gdb.expect(re.escape("{}\r\n(gdb)".format(set_string)))
+        self.gdb.expect("{}\r\n(gdb)".format(set_string))
     
     def delete_all_breakpoints(self):
         self.gdb.sendline("delete")
-        self.gdb.expect(re.escape("Delete all breakpoints? (y or n) "))
+        self.gdb.expect_exact("Delete all breakpoints? (y or n) "))
         self.gdb.sendline("y")
-        self.gdb.expect("\(gdb\)")
+        self.gdb.expect_exact("(gdb)")
         self.comment("All previous breakpoints deleted")
 
 class InterrogatorInterface:
@@ -170,3 +175,8 @@ class InterrogatorInterface:
             return -1 # could not find patterns
         else:
             return cycles/48e6 # running at 48 MHz
+
+    def write_dac(self, to_output):
+        self.ser.flushInput()
+        self.ser.write("DAC {val}".format(val = to_output).encode())
+        self.wait_for_OK()
