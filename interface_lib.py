@@ -49,6 +49,13 @@ class GDBInterface:
         else:
             raise Exception("FATAL: GDB could not connect to openOCD\r\n")
 
+    def soft_reset(self):
+        self.comment("Attempting soft reset.")
+        self.comment("====== ENSURE THIS SOFT RESET WORKS =======")
+        self.gdb.sendline("monitor reset halt")
+        self.gdb.expect_exact("(gdb)")
+        self.comment("Soft reset complete.")
+
     def erase(self):
         self.gdb.sendline("monitor flash erase_sector 0 0 0")
         self.gdb.expect("erased sectors 0 through 0 on flash bank 0 in.*\(gdb\)")
@@ -114,7 +121,7 @@ class GDBInterface:
 
 class InterrogatorInterface:
     def __init__(self):
-        self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=3)
+        self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=5)
 
     def wait_for_OK(self):
         all_received = []
