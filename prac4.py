@@ -14,6 +14,7 @@ class Prac4Tests:
         self.submission_dir = submission_dir
 
     def build(self):
+        print("building {f} in dir: {d}".format(f= self.src_name, d=self.submission_dir))
         as_proc = subprocess.Popen(["arm-none-eabi-as", \
                 "-mcpu=cortex-m0", "-mthumb", "-g", \
                 "-o", self.submission_dir + "/main.o", \
@@ -77,11 +78,6 @@ class Prac4Tests:
                 self.ii.highz_pin(1)
 
         self.comment("All tests complete. Mark: {m}".format(m=mark))
-        return mark
-
-    def scale_mark(self):
-        self.comment("Scaling PRAC4 mark by factor dependant on submission time")
-        self.comment("No scale factor implemented for this prac.")
         return mark
 
     def part1_tests(self):

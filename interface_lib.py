@@ -100,11 +100,14 @@ class GDBInterface:
     def write_word(self, address, data):
         set_string = "set {{int}}{a:#x} = {d:#x}".format(a = address, d = data)
         self.gdb.sendline(set_string)
-        self.gdb.expect("{}\r\n(gdb)".format(set_string))
+        print("Expecting:")
+        ex_str= "{}\r\n(gdb)".format(set_string)
+        print(ex_str)
+        self.gdb.expect_exact(ex_str)
     
     def delete_all_breakpoints(self):
         self.gdb.sendline("delete")
-        self.gdb.expect_exact("Delete all breakpoints? (y or n) "))
+        self.gdb.expect_exact("Delete all breakpoints? (y or n) ")
         self.gdb.sendline("y")
         self.gdb.expect_exact("(gdb)")
         self.comment("All previous breakpoints deleted")

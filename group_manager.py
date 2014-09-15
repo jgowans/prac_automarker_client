@@ -5,7 +5,7 @@ import time
 import os
 import subprocess
 import elf_parser
-import prac5
+import prac4
 
 
 class Group:
@@ -15,8 +15,7 @@ class Group:
         self.directory = None
         self.mark = 0
         self.submissioni_time = None
-        self.src_name = None
-        self.text_size = 0
+        self.src_file = None
         self.test_runner = None
 
     def comment(self, to_append):
@@ -62,24 +61,19 @@ class Group:
                     return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        self.test_suite = Prac4Tests(self.comment, self.full_path_to_src, self.directory + "/Submission attachment(s)/")
-        return 
+        self.test_runner = prac4.Prac4Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
+        if self.test_runner.build() == False:
+            self.test_runner = None
 
     def run_tests(self):
-        if self.full_path_to_elf == None:
+        if self.test_runner == None:
             self.comment("Can't run tests as no elf exists")
             self.mark = 0
         else:
             self.comment("Starting to run tests")
             # would probably be better to do this with inheretance... 
-            self.mark = prac4.run_tests(self.full_path_to_elf, self.comment)
+            self.mark = self.test_runner.run_tests()
             self.comment("Returned from running tests")
-            self.text_size = elf_parser.get_text_size(self.full_path_to_elf)
-
-    def scale_by_factor(self):
-        self.comment("Mark before scaling: {}".format(self.mark))
-        self.mark = prac4.scale_mark(self.mark, self.submission_time, self.comment)
-        self.comment("Mark after scaling: {}".format(self.mark))
 
     def write_comments_file(self):
         with open(self.directory + "/comments.txt", "w") as f:
@@ -126,7 +120,6 @@ class GroupManager:
                 rows.append(row)
 
         for group in self.groups:
-            print("Size of elf for group {g}: {s}".format(g=group.members, s=group.text_size))
             group_row = None # this will be a reference to the group's row
             if group.directory is not None: # ensure they submitted with a valid directory
                 for member in group.members:
