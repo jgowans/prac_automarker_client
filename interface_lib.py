@@ -51,9 +51,8 @@ class GDBInterface:
 
     def soft_reset(self):
         self.comment("Attempting soft reset.")
-        self.comment("====== ENSURE THIS SOFT RESET WORKS =======")
         self.gdb.sendline("monitor reset halt")
-        self.gdb.expect_exact("(gdb)")
+        self.gdb.expect("target state: halted.*\(gdb\)")
         self.comment("Soft reset complete.")
 
     def erase(self):
@@ -96,6 +95,7 @@ class GDBInterface:
             return True
         except:
             self.comment("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
+            self.send_control_c()
             return False
 
     def read_word(self, address):
@@ -107,10 +107,7 @@ class GDBInterface:
     def write_word(self, address, data):
         set_string = "set {{int}}{a:#x} = {d:#x}".format(a = address, d = data)
         self.gdb.sendline(set_string)
-        print("Expecting:")
-        ex_str= "{}\r\n(gdb)".format(set_string)
-        print(ex_str)
-        self.gdb.expect_exact(ex_str)
+        self.gdb.expect_exact("{}\r\n(gdb)".format(set_string))
     
     def delete_all_breakpoints(self):
         self.gdb.sendline("delete")
@@ -121,7 +118,7 @@ class GDBInterface:
 
 class InterrogatorInterface:
     def __init__(self):
-        self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=5)
+        self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=20)
 
     def wait_for_OK(self):
         all_received = []
@@ -177,8 +174,19 @@ class InterrogatorInterface:
 
     def pattern_timing(self, pattern0, pattern1):
         self.ser.flushInput()
-        # the opcode consists of two bytes: the upper byte must be pattern0, the lower bytes must be pattern1
-        self.ser.write("PATTERN_TIMING {p}\r".format(p = (pattern0 << 8) + pattern1).encode())
+        # the opcode consists of two bytes: the lower byte must be pattern0, the upper byte must be pattern1
+        self.ser.write("PATTERN_TIMING {p}\r".format(p = (pattern0) + (pattern1 << 8)).encode())
+        resp = self.wait_for_OK() # something like: [b'PATTERN_TIMING 0xAA5\r\n5', b'TIMING: 23889736\r\n']
+        cycles = int(resp[1].split()[1]) # second line, second word.
+        if cycles == -1:
+            return -1 # could not find patterns
+        else:
+            return cycles/48e6 # running at 48 MHz
+
+    def transition_timing(self, pattern0, pattern1):
+        self.ser.flushInput()
+        # the opcode consists of two bytes: the lower byte must be pattern0, the upper byte must be pattern1
+        self.ser.write("PATTERN_TRANSITION {p}\r".format(p = (pattern0) + (pattern1 << 8)).encode())
         resp = self.wait_for_OK() # something like: [b'PATTERN_TIMING 0xAA5\r\n5', b'TIMING: 23889736\r\n']
         cycles = int(resp[1].split()[1]) # second line, second word.
         if cycles == -1:

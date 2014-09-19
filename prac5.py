@@ -1,4 +1,5 @@
 from interface_lib import InterrogatorInterface, GDBInterface, OpenOCD
+import elf_parser
 import shlex, subprocess
 import time
 import random
@@ -62,11 +63,15 @@ class Prac5Tests:
                 self.gdb.connect()
                 self.gdb.erase()
                 self.gdb.load()
-                self.comment("=== Part 1 ===")
-                mark += self.part1_tests()
+                for test in [self.part1_tests, self.part2_tests, self.part3_tests, self.part4_tests]:
+                    mark += test()
 
                 self.ii.highz_pin(0)
                 self.ii.highz_pin(1)
+
+                size_of_text = elf_parser.get_text_size(self.full_path_to_elf)
+                if size_of_text > 272:
+                    print("======Size of TEXT suspiciously large==========")
 
         self.comment("All tests complete. Mark: {m}".format(m=mark))
         return mark
@@ -77,6 +82,7 @@ class Prac5Tests:
         return mark
 
     def part1_tests(self):
+        self.comment("=== Part 1 ===")
         # run to initialisations_complete 
         if self.gdb.run_to_label("initialisations_complete") == False:
             return 0
@@ -92,13 +98,14 @@ class Prac5Tests:
             address = 0x20002000 - 0x4 - (4 * idx)
             if self.gdb.read_word(address) != val:
                 self.comment("Words at address {addr} should be {exp} but is {act}".format(\
-                        addr = address, exp = val, act = gdb.read_word(address)))
+                        addr = address, exp = val, act = self.gdb.read_word(address)))
                 self.comment("Aborting")
                 return 0
         self.comment("Verification completed successfully. 2/2")
         return 2
 
     def part2_tests(self):
+        self.comment("=== Part 2 ===")
         # run to cycle_patterns
         if self.gdb.run_to_label("cycle_patterns") == False:
             return 0
@@ -114,10 +121,11 @@ class Prac5Tests:
             return 2
 
     def part3_tests(self):
+        self.comment("=== Part 3 ===")
         self.gdb.soft_reset()
         # run to initialisations_complete
         if self.gdb.run_to_label("initialisations_complete") == False:
-            raise Exception("Label not hit second time? That can't be possible...")
+            return 0
         # set illegal value in start of RAM
         self.comment("Setting 0x20000000 to {sa:#x}".format(sa = ILLEGAL_ADDRESS))
         self.gdb.write_word(0x20000000, ILLEGAL_ADDRESS)
@@ -125,6 +133,7 @@ class Prac5Tests:
         if self.gdb.run_to_label("HardFault_Handler") == False:
             return 0
         self.gdb.send_continue()
+        time.sleep(0.5)
         pattern_on_leds =  self.ii.read_port(0) 
         if pattern_on_leds != 0xAA:
             self.comment("HardFault handler expected to produce pattern 0xAA but instead got {p:#x}".format(\
@@ -134,50 +143,51 @@ class Prac5Tests:
         return 1
         
     def part4_tests(self):
+        self.comment("=== Part 4 ===")
         # reset
         self.gdb.send_control_c()
         self.gdb.soft_reset()
         if self.gdb.run_to_label("initialisations_complete") == False:
-            raise Exception("Label not hit third time? That can't be possible...")
+            return 0
         # run to initialisations_complete 
         # set start of ram to some sensible value
         self.comment("Setting 0x20000000 to {sa:#x}".format(sa = SPECIAL_ADDRESS))
         self.gdb.write_word(0x20000000, SPECIAL_ADDRESS)
         # set breakpoint on  delay_routine
-        if self.gdb.run_to_label("initialisations_complete") == False:
-            return 0
         # run to breakpoint in a loop until pattern 0x81 is found.
-        self.comment("Running to 'delay_routine' in a loop until pattern 0x81 found")
-        pattern_found = False
-        for i in range(0, 10):
-            self.gdb.run_to_label("delay_routine")
-            if self.ii.read_port(0) == 0x81:
-                pattern_found = True
-                break
-        if pattern_found == False:
-            self.comment("Could not find 0x81 on LEDs after 10 loop itterations. Aborting")
-            return 0
-        self.comment("Found 0x81. Now checking the rest of the patterns by running to 'delay_routine'.")
+        #self.comment("Running to 'delay_routine' in a loop until pattern 0x81 found")
+        #pattern_found = False
+        #for i in range(0, 10):
+        #    self.gdb.run_to_label("delay_routine")
+        #    if self.ii.read_port(0) == 0x81:
+        #        pattern_found = True
+        #        break
+        #if pattern_found == False:
+        #    self.comment("Could not find 0x81 on LEDs after 10 loop itterations. Aborting")
+        #    return 0
+        #self.comment("Found 0x81. Now checking the rest of the patterns by running to 'delay_routine'.")
         # run to delay_routine again. Verify that next pattern until all patterns
         pattern_array = [0xC3, 0xE7, 0xFF, 0x7E, 0x3C, 0x18]
-        for idx, val in enumerate(pattern_array):
-            self.gdb.run_to_label("delay_routine")
-            pattern_on_leds = self.ii.read_port(0)
-            if pattern_on_leds != pattern_array[idx]:
-                self.comment("On loop iteration number {lp} the pattern {found:#x} was found but should be {exp:#x}".format(
-                            lp = idx, found = pattern_on_leds, exp = val))
-            return 0
+        #for idx, val in enumerate(pattern_array):
+        #    self.gdb.run_to_label("delay_routine")
+        #    pattern_on_leds = self.ii.read_port(0)
+        #    if pattern_on_leds != pattern_array[idx]:
+        #        self.comment("On loop iteration number {lp} the pattern {found:#x} was found but should be {exp:#x}".format(
+        #                    lp = idx, found = pattern_on_leds, exp = val))
+        #    return 0
         # continue
-        self.comment("All patterns found to use 'delay_routine'")
-        self.comment("Now testing time between patterns")
+        #self.comment("All patterns found to use 'delay_routine'")
+        self.comment("Testing time between patterns")
         self.gdb.send_continue()
         # verify all patterns with 0.5 delay between.
         for i in range(0, len(pattern_array) - 1):
-            delay = self.ii.pattern_timing(pattern_array[i], pattern_array[i+1])
-            if delay > 0.52 or delay < 0.48:
-                self.comment("Delay between {p1:#x} and {p2:#x} found to be {d}. 0/2".format(
-                            p1 = pattern_array[i], p2 = pattern_array[i+1], d = delay))
+            delay = self.ii.transition_timing(pattern_array[i], pattern_array[i+1])
+            self.comment("Delay between {p1:#x} and {p2:#x} found to be {d}".format(
+                        p1 = pattern_array[i], p2 = pattern_array[i+1], d = round(delay,2)))
+            if delay > 0.53 or delay < 0.47:
+                self.comment("Incorrect. 0/2")
                 return 0
+
         self.comment("Delays found to be correct. 2/2")
         return 2
 
