@@ -196,5 +196,5 @@ class InterrogatorInterface:
 
     def write_dac(self, to_output):
         self.ser.flushInput()
-        self.ser.write("DAC {val}".format(val = to_output).encode())
+        self.ser.write("DAC {val}\r".format(val = to_output).encode())
         self.wait_for_OK()

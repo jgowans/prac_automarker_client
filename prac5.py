@@ -97,7 +97,7 @@ class Prac5Tests:
         for idx, val in enumerate(FIB_NUMBERS):
             address = 0x20002000 - 0x4 - (4 * idx)
             if self.gdb.read_word(address) != val:
-                self.comment("Words at address {addr} should be {exp} but is {act}".format(\
+                self.comment("Words at address {addr:#x} should be {exp} but is {act}".format(\
                         addr = address, exp = val, act = self.gdb.read_word(address)))
                 self.comment("Aborting")
                 return 0

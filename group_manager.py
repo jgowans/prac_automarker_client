@@ -5,7 +5,7 @@ import time
 import os
 import subprocess
 import elf_parser
-import prac5
+import prac6
 
 
 class Group:
@@ -61,7 +61,7 @@ class Group:
                     return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        self.test_runner = prac5.Prac5Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
+        self.test_runner = prac6.Prac6Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
         if self.test_runner.build() == False:
             self.test_runner = None
 

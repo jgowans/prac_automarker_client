@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = "5"
+PRACNUMBER = "6"
 
 import os
 import logging
