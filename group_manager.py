@@ -5,7 +5,7 @@ import time
 import os
 import subprocess
 import elf_parser
-import prac6
+import prac8
 
 
 class Group:
@@ -35,18 +35,25 @@ class Group:
         - if multiple files submitted, check if only one ends in a .s extension'''
         os.chdir(self.directory + "/Submission attachment(s)/")
         all_files = os.listdir()
-        assembly_files = [fi for fi in all_files if fi.endswith(".s")]
+        assembly_files = [fi for fi in all_files if fi.endswith(".c")]
         if len(assembly_files) == 1:
             self.src_file = assembly_files[0]
-            self.comment("Only 1 .s file submitted, namely: {}".format(self.src_file))
+            self.comment("Only 1 .c file submitted, namely: {}".format(self.src_file))
             return True
-        elif "main.s" in assembly_files:
+        elif "main.c" in assembly_files:
             self.src_file = "main.s"
-            self.comment("Multiple .s files submitted: using main.s")
+            self.comment("Multiple .c files submitted: using main.s")
             return True
         else:
             self.comment("No suitable source file found out of: {fi}".format(fi = all_files))
             return False
+
+    def prepend_stdnums(self):
+        stdnum_str = "// {m}\n".format(m = str(self.members))
+        with open(self.directory + "/Submission attachment(s)/" + self.src_file, "r") as f:
+            src_code = f.read()
+        with open(self.directory + "/Submission attachment(s)/" + self.src_file, "w") as f:
+            f.write(stdnum_str + src_code)
 
     def build_submission(self):
         if self.src_file == None:
@@ -61,7 +68,7 @@ class Group:
                     return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        self.test_runner = prac6.Prac6Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
+        self.test_runner = prac8.Prac8Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
         if self.test_runner.build() == False:
             self.test_runner = None
 

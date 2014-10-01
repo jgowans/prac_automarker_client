@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = "6"
+PRACNUMBER = "8"
 
 import os
 import logging
@@ -46,6 +46,7 @@ while (groupman.has_next() == True):
         group.directory = group_dirs[0]
         group.get_submissiontime()
         group.find_src_file()
+        group.prepend_stdnums()
         group.build_submission()
         group.run_tests()
         group.write_comments_file()
