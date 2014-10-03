@@ -68,7 +68,7 @@ class Prac8Tests:
                 self.gdb.load()
                 self.gdb.run_to_function("main")
 
-                for test in [self.part1_tests, self.part2_tests, self.part3_tests]:
+                for test in [self.part1_tests, self.part2_tests, self.part3_tests, self.part4_tests]:
                     mark += test()
 
                 self.ii.highz_pin(0)
@@ -87,18 +87,22 @@ class Prac8Tests:
             return 0
         # get address of array, min and max
         min_address = self.gdb.get_variable_value("&min")
+        self.comment("Address of min found to be {min_add:#x}".format(min_add = min_address))
         max_address = self.gdb.get_variable_value("&max")
+        self.comment("Address of max found to be {max_add:#x}".format(max_add = max_address))
         # run to find_min_max
         self.gdb.run_to_function("find_min_max")
         # verify contents of addresses
         self.comment("Verifying contexts of min, max and array")
-        min_val = self.gdb.read_word(min_address)
+        min_val = self.gdb.get_variable_value("*(int8_t*){ma:#x}".format(ma = min_address))
+        self.comment("Data in main::min should be 0xFC and is {v:#x}.".format(v = min_val))
         if min_val != 0xFC:
-            self.comment("Data in main::min should be 0xFC and is {v}. Incorrect".format(v = min_val))
+            self.comment("Incorrect. 0/2")
             return 0
-        max_val = self.gdb.read_word(max_address)
+        max_val = self.gdb.get_variable_value("*(int8_t*){ma:#x}".format(ma = max_address))
+        self.comment("Data in main::max should be 0xFC and is {v:#x}.".format(v = max_val))
         if max_val != 0xFC:
-            self.comment("Data in main::max should be 0xFC and is {v}. Incorrect".format(v = max_val))
+            self.comment("Incorrect. 0/2")
             return 0
         self.comment("Verifying that array initialised correctly")
         for idx, val in enumerate(initial_array):
@@ -107,18 +111,27 @@ class Prac8Tests:
                 self.comment("Array element error at index {i}.".format(i = idx))
                 self.comment("Element should be {exp:#x}. Found to be {act:#x}".format(exp = val, act = found))
                 return 0
+        self.comment("Elements found to be initialised correctly. 2/2")
         return 2
 
     def part2_tests(self):
         self.comment("=== Part 2 ===")
         # get function prototype of find_min_max. Verify
+        self.comment("find_min_max prototype should be: 'void find_min_max(int8_t *, uint32_t, int8_t *, int8_t *);'")
+        function_prototypes = self.gdb.get_function_prototype("find_min_max")
+        self.comment("find_min_max prototype found to be: '{fmm}'".format(fmm = function_prototypes))
+        if len(function_prototypes) > 1:
+            self.comment("Error: multiple function prototypes for find_min_max. 0/2".format(fp = function_prototypes))
+            return 0;
+        if function_prototypes[0] != 'void find_min_max(int8_t *, uint32_t, int8_t *, int8_t *);':
+            self.comment("Find_min_maxunction prototype incorrect. 0/2"
         return 2
 
     def part3_tests(self):
         self.comment("=== Part 3 ===")
-        # run to find_min_max
         # modify the array
         # allow find_min_max to finish
+        self.gdb.send_finish()
         # verify values of min (2) and max (1)
         return 3
 

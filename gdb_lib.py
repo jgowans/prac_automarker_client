@@ -37,6 +37,11 @@ class GDBInterface:
         else:
             raise Exception("FATAL: GDB could not connect to openOCD\r\n")
 
+    def send_raw_command(self, cmd):
+        self.gdb.sendline(cmd)
+        self.gdb.expect_exact("(gdb)")
+        return self.gdb.before.decode()
+
     def soft_reset(self):
         self.comment("Attempting soft reset.")
         self.gdb.sendline("monitor reset halt")
@@ -148,7 +153,6 @@ class GDBInterface:
         var_string = "print/x {v}".format(v = var)
         self.gdb.sendline(var_string)
         self.gdb.expect("\$.*\n") # expecting something like: $6 = 0x7b
-        print(self.gdb.after.decode())
         value = self.gdb.after.decode().split('=')[1].strip() # should get the '0x7b' of the above
         self.gdb.expect_exact("(gdb)")
         return int(value, 16)
@@ -156,6 +160,11 @@ class GDBInterface:
     def set_variable_value(self, var, value):
         set_string = "set {v}={val}".format(v = var, val=value)
         self.gdb.sendline(set_string)
+        self.gdb.expect_exact("(gdb)")
+
+    def send_finish(self):
+        self.gdb.sendline("finish")
+        self.gdb.expect_exact("Run till exit from")
         self.gdb.expect_exact("(gdb)")
 
 
