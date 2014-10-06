@@ -42,13 +42,16 @@ while (groupman.has_next() == True):
         group.comment("No submissions for group.")
     elif len(group_dirs) == 1:
         group.comment("Directory \"{}\" assigned to group".format(str(group_dirs[0]), str(group.members)))
-        group.comment("Submission directory from one group member found. Proceeding.")
-        group.directory = group_dirs[0]
-        group.get_submissiontime()
-        group.find_src_file()
-        group.prepend_stdnums()
-        group.build_submission()
-        group.run_tests()
+        if os.path.isdir(group_dirs[0] + "/Submission attachment(s)"):
+            group.comment("Submission directory found. Proceeding.")
+            group.directory = group_dirs[0]
+            group.get_submissiontime()
+            group.find_src_file()
+            group.prepend_stdnums()
+            group.build_submission()
+            group.run_tests()
+        else:
+            group.comment("No attachments found.")
         group.write_comments_file()
         group.clean()
     else:

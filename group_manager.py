@@ -23,10 +23,11 @@ class Group:
         self.comment_arr.append(str(to_append))
     
     def get_submissiontime(self):
-        with open(str(self.directory) + "/timestamp.txt") as timefile:
-            timestamp = timefile.readline() # will return something like: '20140805211624959'
-            self.submission_time = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
-            self.comment("Submissiontime of {} assigned".format(time.strftime("%a:%H:%M", self.submission_time)))
+        if os.path.exists((str(self.directory) + "/timestamp.txt")):
+            with open(str(self.directory) + "/timestamp.txt") as timefile:
+                timestamp = timefile.readline() # will return something like: '20140805211624959'
+                self.submission_time = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
+                self.comment("Submissiontime of {} assigned".format(time.strftime("%a:%H:%M", self.submission_time)))
 
     def find_src_file(self):
         '''The matchin process is to 
@@ -49,6 +50,8 @@ class Group:
             return False
 
     def prepend_stdnums(self):
+        if self.src_file is None:
+            return False
         stdnum_str = "// {m}\n".format(m = str(self.members))
         with open(self.directory + "/Submission attachment(s)/" + self.src_file, "r") as f:
             src_code = f.read()

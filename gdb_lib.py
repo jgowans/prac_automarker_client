@@ -30,7 +30,7 @@ class GDBInterface:
 
     def connect(self):
         self.gdb.sendline("target remote localhost:3333")
-        if self.gdb.expect([".*using localhost:3333[\s\S]*\(\)[\s\S]*\(gdb\)", \
+        if self.gdb.expect([".*using localhost:3333[\s\S]*\([\s\S]*\)[\s\S]*\(gdb\)", \
                 "Remote communication error",\
                 "Connection timed out", "Remote connection closed"]) == 0:
             self.comment("GDB connected to openOCD")
@@ -139,7 +139,17 @@ class GDBInterface:
         return functions
 
     def get_all_global_variables(self):
-        return []
+        self.gdb.sendline("info variables")
+        self.gdb.expect("(gdb)")
+        all_vars = self.gdb.before.decode().split("\n")
+        all_vars = [v.strip() for v in all_vars]
+        all_defined_idx = all_vars.index("All defined variables:")
+        non_debugging_idx = all_vars.index("Non-debugging symbols:")
+        global_vars = []
+        for idx in range(all_defined_idx + 1, non_debugging_idx):
+            if all_vars[idx] != '':
+                global_vars.append(all_vars[idx])
+        return global_vars
 
     def get_variable_type(self, var):
         var_string = "whatis {v}".format(v = var)
@@ -152,7 +162,8 @@ class GDBInterface:
     def get_variable_value(self, var):
         var_string = "print/x {v}".format(v = var)
         self.gdb.sendline(var_string)
-        self.gdb.expect("\$.*\n") # expecting something like: $6 = 0x7b
+        if self.gdb.expect(["\$.*\n", "No symbol .* in current context"]) != 0: # expecting something like: $6 = 0x7b
+            raise Exception("Symbol not found")
         value = self.gdb.after.decode().split('=')[1].strip() # should get the '0x7b' of the above
         self.gdb.expect_exact("(gdb)")
         return int(value, 16)
