@@ -5,7 +5,8 @@ import time
 import os
 import subprocess
 import elf_parser
-import prac7
+import zipfile
+import prac9
 
 
 class Group:
@@ -29,6 +30,32 @@ class Group:
                 self.submission_time = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
                 self.comment("Submissiontime of {} assigned".format(time.strftime("%a:%H:%M", self.submission_time)))
 
+    def unzip_submission(self):
+        os.chdir(self.directory + "/Submission attachment(s)/")
+        all_files = os.listdir()
+        elf_files = [fi for fi in all_files if fi.endswith(".elf")]
+        if len(elf_files) > 0:
+            self.comment("Elf files exist before unzipping run: {e}".format(e = elf_files))
+            for e in elf_files:
+                os.remove(e)
+            self.comment("Elf files deleted")
+        zip_files = [fi for fi in all_files if fi.endswith(".zip")]
+        if len(zip_files) != 1:
+            self.comment("Too many or not enough zip file found out of: {a}".format(a = all_files))
+            self.comment("Aborting.")
+            return False
+        self.comment("Extracting zipfile: {z}".format(z = zip_files[0]))
+        with zipfile.ZipFile(zip_files[0]) as z:
+            z.extractall()
+        all_files = os.listdir()
+        self.comment("After extract, directory contains: {a}".format(a = all_files))
+        elf_files = [fi for fi in all_files if fi.endswith(".elf")]
+        if len(elf_files) > 0:
+            self.comment("Elf files exist before unzipping run: {e}".format(e = elf_files))
+            for e in elf_files:
+                os.remove(e)
+            self.comment("Elf files deleted")
+
     def find_src_file(self):
         '''The matchin process is to 
         - first check for a main.s file
@@ -42,8 +69,8 @@ class Group:
             self.comment("Only 1 .c file submitted, namely: {}".format(self.src_file))
             return True
         elif "main.c" in assembly_files:
-            self.src_file = "main.s"
-            self.comment("Multiple .c files submitted: using main.s")
+            self.src_file = "main.c"
+            self.comment("Multiple .c files submitted: using main.c")
             return True
         else:
             self.comment("No suitable source file found out of: {fi}".format(fi = all_files))
@@ -71,7 +98,7 @@ class Group:
                     return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        self.test_runner = prac7.Prac7Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
+        self.test_runner = prac9.Prac9Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
         if self.test_runner.build() == False:
             self.test_runner = None
 

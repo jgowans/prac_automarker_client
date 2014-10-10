@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = "7"
+PRACNUMBER = "9"
 
 import os
 import logging
@@ -46,6 +46,7 @@ while (groupman.has_next() == True):
             group.comment("Submission directory found. Proceeding.")
             group.directory = group_dirs[0]
             group.get_submissiontime()
+            group.unzip_submission()
             group.find_src_file()
             group.prepend_stdnums()
             group.build_submission()
