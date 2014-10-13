@@ -95,7 +95,7 @@ class Prac9Tests:
         self.ii.highz_pin(3)
         time.sleep(2)
         current_pattern = self.ii.read_port(0)
-        timing = self.ii.transition_timing(current_pattern + 1, current_pattern + 2)
+        timing = self.ii.transition_timing(current_pattern + 2, current_pattern + 3)
         self.comment("Timing between an increment expected to be 0.5 and found to be: {t}".format(t = round(timing, 2)))
         if timing < 0.46 or timing > 0.54:
             self.comment("Timing out. Awarding 0")
@@ -110,7 +110,7 @@ class Prac9Tests:
         self.ii.clear_pin(3)
         time.sleep(0.6)
         current_pattern = self.ii.read_port(0)
-        timing = self.ii.transition_timing(current_pattern - 1, current_pattern - 2)
+        timing = self.ii.transition_timing(current_pattern - 2, current_pattern - 3)
         self.comment("Timing between a decrement expected to be 0.5 and found to be: {t}".format(t = round(timing, 2)))
         if timing < 0.47 or timing > 0.53:
             self.comment("Timing out. Awarding 0")
@@ -129,7 +129,7 @@ class Prac9Tests:
         self.ii.write_dac(40)
         time.sleep(1)
         current_pattern = self.ii.read_port(0)
-        timing = self.ii.transition_timing(current_pattern + 1, current_pattern + 2)
+        timing = self.ii.transition_timing(current_pattern + 4, current_pattern + 5)
         self.comment("Timing between an increment found to be: {t}".format(t = round(timing, 2)))
         if timing < 0.14 or timing > 0.18:
             self.comment("Timing out. Awarding 0")
@@ -141,7 +141,7 @@ class Prac9Tests:
         self.ii.write_dac(150)
         time.sleep(1)
         current_pattern = self.ii.read_port(0)
-        timing = self.ii.transition_timing(current_pattern - 1, current_pattern - 2)
+        timing = self.ii.transition_timing(current_pattern - 4, current_pattern - 5)
         self.comment("Timing between an decrement found to be: {t}".format(t = round(timing, 2)))
         if timing < 0.30 or timing > 0.36:
             self.comment("Timing out. Awarding 0")

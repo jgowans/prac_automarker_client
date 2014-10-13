@@ -81,6 +81,8 @@ class InterrogatorInterface:
         return int(inputs[1], 16)
 
     def pattern_timing(self, pattern0, pattern1):
+        pattern0 = pattern0 & 0xFF
+        pattern1 = pattern1 & 0xFF
         self.ser.flushInput()
         # the opcode consists of two bytes: the lower byte must be pattern0, the upper byte must be pattern1
         self.ser.write("PATTERN_TIMING {p}\r".format(p = (pattern0) + (pattern1 << 8)).encode())
@@ -92,6 +94,8 @@ class InterrogatorInterface:
             return cycles/48e6 # running at 48 MHz
 
     def transition_timing(self, pattern0, pattern1):
+        pattern0 = pattern0 & 0xFF
+        pattern1 = pattern1 & 0xFF
         self.ser.flushInput()
         # the opcode consists of two bytes: the lower byte must be pattern0, the upper byte must be pattern1
         self.ser.write("PATTERN_TRANSITION {p}\r".format(p = (pattern0) + (pattern1 << 8)).encode())
