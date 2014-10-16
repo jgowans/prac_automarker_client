@@ -110,3 +110,8 @@ class InterrogatorInterface:
         self.ser.flushInput()
         self.ser.write("DAC {val}\r".format(val = to_output).encode())
         self.wait_for_OK()
+
+    def configure_dac_channel(self, channel, state):
+        self.ser.flushInput()
+        self.ser.write("DAC_SELECT {s:#x}\r".format(s = (channel << 8) | state).encode())
+        self.wait_for_OK()

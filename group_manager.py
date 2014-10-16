@@ -6,7 +6,7 @@ import os
 import subprocess
 import elf_parser
 import zipfile
-import prac9
+import prac10
 
 
 class Group:
@@ -98,7 +98,7 @@ class Group:
                     return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        self.test_runner = prac9.Prac9Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
+        self.test_runner = prac10.Prac10Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
         if self.test_runner.build() == False:
             self.test_runner = None
 
