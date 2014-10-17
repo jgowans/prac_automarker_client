@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = "10"
+BASE_DIR = "/tmp/Prac_Exam_Thursday/"
 
 import os
 import logging
 import time
-logging.basicConfig(filename = "/tmp/prac{p}_{t}.log".format(p = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())), \
+logging.basicConfig(filename = "/tmp/prac_exam_thursday_{t}.log".format(t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())), \
         level=logging.INFO, format="%(asctime)s:" + logging.BASIC_FORMAT)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
@@ -15,12 +15,9 @@ logger = logging.getLogger(__name__)
 import csv
 import group_manager
 
-BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
-
 logger.info("Automarker beginning execution")
 
-
-groupman = group_manager.GroupManager("/tmp/groups.csv")
+groupman = group_manager.GroupManager(BASE_DIR + "grades.csv")
 
 # iterate through the folder, assigning a directory to each group
 os.chdir(BASE_DIR)
@@ -33,7 +30,7 @@ while (groupman.has_next() == True):
     for d in sub_dirs:
         directory_match = True 
         for stdnum in group.members:
-            if stdnum not in d.upper():
+            if stdnum.upper() not in d.upper():
                 directory_match = False
         if directory_match == True:
              group_dirs.append(BASE_DIR + d)
@@ -48,6 +45,7 @@ while (groupman.has_next() == True):
             group.get_submissiontime()
             group.unzip_submission()
             group.find_src_file()
+            #group.copy_src_to_centeral()
             group.prepend_stdnums()
             group.build_submission()
             group.run_tests()
@@ -59,9 +57,9 @@ while (groupman.has_next() == True):
         group.comment("This should never happen. Contact me.")
 
 logger.info("Generating marks file")
-groupman.generate_marks_file("/tmp/Practical{p}/grades.csv".format(p = PRACNUMBER), \
-        "/tmp/Practical{p}/grades_new.csv".format(p = PRACNUMBER))
+groupman.generate_marks_file()
 
+#### DEAD CODE #####
 #groupman.restart()
 #while (groupman.has_next() == True):
 #    group = groupman.next()

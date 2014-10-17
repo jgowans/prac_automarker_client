@@ -6,7 +6,8 @@ import os
 import subprocess
 import elf_parser
 import zipfile
-import prac10
+import prac_exam_thu
+import shutil
 
 
 class Group:
@@ -42,6 +43,7 @@ class Group:
         zip_files = [fi for fi in all_files if fi.endswith(".zip")]
         if len(zip_files) != 1:
             self.comment("Too many or not enough zip file found out of: {a}".format(a = all_files))
+            exit()
             self.comment("Aborting.")
             return False
         self.comment("Extracting zipfile: {z}".format(z = zip_files[0]))
@@ -63,18 +65,25 @@ class Group:
         - if multiple files submitted, check if only one ends in a .s extension'''
         os.chdir(self.directory + "/Submission attachment(s)/")
         all_files = os.listdir()
-        assembly_files = [fi for fi in all_files if fi.endswith(".c")]
-        if len(assembly_files) == 1:
-            self.src_file = assembly_files[0]
+        c_files = [fi for fi in all_files if fi.endswith(".c")]
+        if len(c_files) == 1:
+            self.src_file = c_files[0]
             self.comment("Only 1 .c file submitted, namely: {}".format(self.src_file))
             return True
-        elif "main.c" in assembly_files:
+        elif "main.c" in c_files:
             self.src_file = "main.c"
             self.comment("Multiple .c files submitted: using main.c")
             return True
         else:
+            print("No C files found for:")
+            print(self.directory + "/Submission attachment(s)/")
             self.comment("No suitable source file found out of: {fi}".format(fi = all_files))
             return False
+
+    def copy_src_to_centeral(self):
+        os.chdir(self.directory + "/Submission attachment(s)/")
+        new_name = str(self.members[0]) + "_" + self.src_file
+        shutil.copyfile(self.src_file, "/tmp/plag_check/thu_prac_exam/" + new_name)
 
     def prepend_stdnums(self):
         if self.src_file is None:
@@ -93,12 +102,12 @@ class Group:
         with open(self.src_file) as fi:
             line0 = fi.readline()
             for stdnum in self.members:
-                if stdnum not in line0.upper():
+                if stdnum.upper() not in line0.upper():
                     self.comment("Student number: {s} not found in starting line of source file".format(s = stdnum))
                     return False
         self.comment("Student numbers appeared correctly at start of file")
         self.comment("Attempting to compile file: {}".format(self.src_file))
-        self.test_runner = prac10.Prac10Tests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
+        self.test_runner = prac_exam_thu.PracExamThuTests(self.comment, self.directory + "/Submission attachment(s)/", self.src_file)
         if self.test_runner.build() == False:
             self.test_runner = None
 
@@ -125,13 +134,13 @@ class GroupManager:
         logger.info("initialising a groups manager")
         self.groups = [] # a dict mapping a group number to a list of stdnums
         self.group_pointer = 0
+        self.grades_filename = filename
         with open(filename) as groupsfile:
             groupsfile_reader = csv.reader(groupsfile, delimiter=',')
             for group in groupsfile_reader:
                 # prune all empty members, then initialise the marks and comments dicts
-                if group.count('') == 1:
-                    group.remove('')
-                self.groups.append(Group(group))
+                if len(group) == 6:
+                    self.groups.append(Group([group[1]]))
         logger.info("group creating completed with a total of {groupnums} groups.".format(groupnums=len(self.groups)))
 
     def has_next(self):
@@ -149,9 +158,9 @@ class GroupManager:
         self.group_pointer += 1
         return self.groups[self.group_pointer - 1]
 
-    def generate_marks_file(self, csv_old, csv_new):
+    def generate_marks_file(self):
         rows =[]
-        with open(csv_old) as fi:
+        with open(self.grades_filename) as fi:
             old_reader = csv.reader(fi)
             for row in old_reader:
                 rows.append(row)
@@ -161,7 +170,7 @@ class GroupManager:
             if group.directory is not None: # ensure they submitted with a valid directory
                 for member in group.members:
                     for row_to_check in rows:
-                        if (len(row_to_check) == 4) and (member in row_to_check[0]): # std num found in Group column
+                        if (len(row_to_check) == 6) and (member in row_to_check[1]): # std num found in Group column
                             if group_row == None: # not yet assigned - assign directly
                                 group_row = row_to_check
                             else: # already assigned - ensure new assignment matches old
@@ -170,9 +179,9 @@ class GroupManager:
                                             r1 = group_row, r2 = row_to_check))
                 if group_row == None:
                     raise Exception("Group {g} submitted but no matching row found".format(g = group.members))
-                group_row[3] = group.mark # group_row should be a reference to a row in rows, so this should update rows.
+                group_row[4] = group.mark # group_row should be a reference to a row in rows, so this should update rows.
         # write back        
-        with open(csv_new, 'w') as fi:
+        with open(self.grades_filename + "_new", 'w') as fi:
             new_writer = csv.writer(fi)
             for row in rows:
                 new_writer.writerow(row)
