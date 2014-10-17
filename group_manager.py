@@ -45,8 +45,11 @@ class Group:
             self.comment("Aborting.")
             return False
         self.comment("Extracting zipfile: {z}".format(z = zip_files[0]))
-        with zipfile.ZipFile(zip_files[0]) as z:
-            z.extractall()
+        try:
+            with zipfile.ZipFile(zip_files[0]) as z:
+                z.extractall()
+        except:
+            return False
         all_files = os.listdir()
         self.comment("After extract, directory contains: {a}".format(a = all_files))
         elf_files = [fi for fi in all_files if fi.endswith(".elf")]

@@ -73,6 +73,7 @@ class Prac10Tests:
                     except Exception as e:
                         self.comment("Unrecoverable exception while running test. Aborting")
                         self.comment(str(e))
+                        self.comment(type(e))
                         break
 
                 self.ii.highz_pin(0)
@@ -92,9 +93,9 @@ class Prac10Tests:
             pat1 = pattern_array[(i+1) % len(pattern_array)]
             timing = round(self.ii.transition_timing(pat0, pat1), 3)
             self.comment("Timing between {p0:#x} and {p1:#x} found to be: {t}".format(p0 = pat0, p1 = pat1, t = timing))
-        if timing < 1.0*0.94 or timing > 1*1.06:
-            self.comment("Timing out. Awarding 0.")
-            return 0
+            if timing < 1.0*0.94 or timing > 1*1.06:
+                self.comment("Timing out. Awarding 0.")
+                return 0
         self.comment("Correct. 2/2")
         return 2
 
@@ -103,9 +104,10 @@ class Prac10Tests:
         self.comment("=== Part 2 ===")
         self.comment("Waiting until pattern 0x48 is displayed.")
         t0 = time.time()
-        while( (time.time() - t0 < 10.0) and self.ii.read_port(0) != 0x48):
-            pass
-        if self.ii.read_port(0) != 0x48:
+        leds = self.ii.read_port(0)
+        while( (time.time() - t0 < 10.0) and leds != 0x48):
+            leds = self.ii.read_port(0)
+        if leds != 0x48:
             self.comment("Could not find 0x48 after 10 seconds. Timeout. 0/2")
             return 0
         self.comment("Pattern 0x48 is now on LEDs. Asserting a 100 ms pulse on SW0")
