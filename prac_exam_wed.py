@@ -155,10 +155,10 @@ class PracExamWedTests:
                 l=leds, l1 = leds-2, l2 = leds-3))
         timing = round(self.ii.transition_timing(leds-2, leds-3), 3)
         self.comment("Transition timing found to be {t} seconds".format(t = timing))
-        if timing < 0.125/1.12 or timing > 0.125*1.12:
+        if timing < 0.125/1.15 or timing > 0.125*1.15:
             self.comment("Timing very out. 0/2")
             return 0
-        if timing < 0.125/1.06 or timing > 0.125*1.06:
+        if timing < 0.125/1.08 or timing > 0.125*1.08:
             self.comment("Timing somewhat out.")
             timing_somewhat_out = True
         self.comment("Asserting voltage such that timing should be 0.39 s")

@@ -84,6 +84,7 @@ class PracExamThuTests:
                     except Exception as e:
                         self.comment("Unrecoverable exception while running test. Aborting")
                         self.comment(str(e))
+                        self.comment(type(e))
                         break
 
         self.comment("All tests complete. Mark: {m}".format(m=mark))
@@ -124,8 +125,13 @@ class PracExamThuTests:
         self.ii.highz_pin(0)
         time.sleep(0.5)
         leds = self.ii.read_port(0)
-        idx = pattern_array.index(leds)
-        self.comment("LEDs found to be {l:#x} which is index: {i}".format(l = leds, i = idx))
+        self.comment("LEDs found to be {l:#x}".format(l = leds))
+        try:
+            idx = pattern_array.index(leds)
+        except:
+            self.comment("This pattern is part of the array. Aborting.")
+            return 0
+        self.comment("This is array index: {i}".format(i = idx))
         self.comment("Asserting a noisy falling edge on SW1")
         self.ii.clear_pin(1)  # about 2.5 ms between each transition.
         self.ii.highz_pin(1)
@@ -134,8 +140,13 @@ class PracExamThuTests:
         self.ii.clear_pin(1)
         time.sleep(0.1)
         leds = self.ii.read_port(0)
-        idx_new = pattern_array.index(leds)
-        self.comment("LEDs found to be {l:#x} which is index: {i}".format(l = leds, i = idx))
+        self.comment("LEDs found to be {l:#x}".format(l = leds))
+        try:
+            idx_new = pattern_array.index(leds)
+        except:
+            self.comment("This pattern is part of the array. Aborting.")
+            return 0
+        self.comment("This is array index: {i}".format(i = idx))
         if (idx_new < idx):
             diff = len(pattern_array) + idx_new - idx
         else:
@@ -152,10 +163,8 @@ class PracExamThuTests:
         else:
             self.comment("Too much change. 0/2")
             return 0
-        leds = self.ii.read_port(0)
-        idx = pattern_array.index(leds)
+        idx = idx_new
         self.comment("Asserting a noisy rising edge on SW1. Nothing should happen.")
-        leds_pre = self.ii.read_port(0)
         self.ii.highz_pin(1)
         self.ii.clear_pin(1)
         self.ii.highz_pin(1)
@@ -163,8 +172,13 @@ class PracExamThuTests:
         self.ii.highz_pin(1)
         time.sleep(0.1)
         leds = self.ii.read_port(0)
-        idx_new = pattern_array.index(leds)
-        self.comment("LEDs found to be {l:#x} which is index: {i}".format(l = leds, i = idx))
+        self.comment("LEDs found to be {l:#x}".format(l = leds))
+        try:
+            idx_new = pattern_array.index(leds)
+        except:
+            self.comment("This pattern is part of the array. Aborting.")
+            return 0
+        self.comment("This is array index: {i}".format(i = idx))
         if (idx_new < idx):
             diff = len(pattern_array) + idx_new - idx
         else:
@@ -179,6 +193,7 @@ class PracExamThuTests:
 
     def part3_tests(self):
         self.comment("=== Part 3 ===")
+        self.ii.highz_pin(1)
         time.sleep(0.5)
         timing_marginal = False
         self.comment("Holding SW2 and looking for pattern timings running BACKWARDS")
