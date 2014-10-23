@@ -219,6 +219,8 @@ class PracExamThuTests:
     def part4_tests(self):
         self.comment("=== Part 4 ===")
         self.comment("Asserting 0 V on POT0. Timing should be 0.05 seconds")
+        self.ii.configure_dac_channel(0, 0)
+        self.ii.configure_dac_channel(1, 0)
         self.ii.write_dac(0)
         timing_somewhat_out = False
         self.comment("Asserting SW0 and releasing SW2- expecting patterns to go forward")
@@ -239,6 +241,7 @@ class PracExamThuTests:
         self.ii.clear_pin(2)
         time.sleep(0.5)
         self.comment("Asserting voltage 3.3*200/255 such that timing should be 0.4 s")
+        self.ii.configure_dac_channel(0, 1)
         self.ii.write_dac(200)
         time.sleep(0.5)
         self.comment("Timing transition from 0x0C to 0x06")
