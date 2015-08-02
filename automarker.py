@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = "10"
+PRACNUMBER = "1"
 
 import os
 import logging
 import time
+import csv
+import group_manager
+
 logging.basicConfig(filename = "/tmp/prac{p}_{t}.log".format(p = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())), \
         level=logging.INFO, format="%(asctime)s:" + logging.BASIC_FORMAT)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 console.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
-logging.getLogger('').addHandler(console)
-logger = logging.getLogger(__name__)
-import csv
-import group_manager
+logging.getLogger().addHandler(console)
+logger = logging.getLogger()
 
 BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
-
 logger.info("Automarker beginning execution")
-
 
 groupman = group_manager.GroupManager("/tmp/groups.csv")
 
 # iterate through the folder, assigning a directory to each group
-os.chdir(BASE_DIR)
-sub_dirs = os.listdir()
+sub_dirs = os.listdir(BASE_DIR)
 groupman.restart()
 while (groupman.has_next() == True):
     group = groupman.next()
