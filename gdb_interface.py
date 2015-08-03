@@ -1,10 +1,10 @@
 import pexpect
 import re
+import elf_parser
 
 class GDBInterface:
-    def __init__(self, fi, comment):
-        self.comment = comment
-        self.fi = fi
+    def __init__(self, logger):
+        self.logger = logger
         self.gdb = pexpect.spawn("arm-none-eabi-gdb", timeout=3)
         self.gdb.expect_exact("(gdb)")
         # disables the "Type <return> to continue, or q <return> to quit"
@@ -20,20 +20,21 @@ class GDBInterface:
     def __exit__(self, type, value, traceback):
         self.gdb.terminate(True)
 
-    def open_file(self):
-        self.gdb.sendline("file \"{}\"".format(self.fi))
+    def open_file(self, elf_file):
+        self.elf_file = elf_file
+        self.gdb.sendline("file \"{}\"".format(elf_file))
         # we'll either get a done or a no such file
         if self.gdb.expect(["done.*\(gdb\)", "No such file or directory"]) == 0:
-            self.comment( "file {} opened in GDB".format(self.fi))
+            self.logger.debug( "file {} opened in GDB".format(elf_file))
         else:
-            raise Exception("FATAL: Could not open file {} in GDB".format(self.fi))
+            raise Exception("FATAL: Could not open file {} in GDB".format(elf_file))
 
     def connect(self):
         self.gdb.sendline("target remote localhost:3333")
         if self.gdb.expect([".*using localhost:3333[\s\S]*\([\s\S]*\)[\s\S]*\(gdb\)", \
                 "Remote communication error",\
                 "Connection timed out", "Remote connection closed"]) == 0:
-            self.comment("GDB connected to openOCD")
+            self.logger.debug("GDB connected to openOCD")
         else:
             raise Exception("FATAL: GDB could not connect to openOCD\r\n")
 
@@ -43,67 +44,67 @@ class GDBInterface:
         return self.gdb.before.decode()
 
     def soft_reset(self):
-        self.comment("Attempting soft reset.")
+        self.logger.debug("Attempting soft reset.")
         self.gdb.sendline("monitor reset halt")
         self.gdb.expect("target state: halted.*\(gdb\)")
-        self.comment("Soft reset complete.")
+        self.logger.debug("Soft reset complete.")
 
     def erase(self):
         self.gdb.sendline("monitor flash erase_sector 0 0 0")
         self.gdb.expect("erased sectors 0 through 0 on flash bank 0 in.*\(gdb\)")
-        self.comment("Microcontroller flash memory erased")
+        self.logger.debug("Microcontroller flash memory erased")
 
     def load(self):
         self.gdb.sendline("load")
         self.gdb.expect("Transfer rate.*\(gdb\)")
-        self.comment(".elf file loaded into flash")
+        self.logger.info(".elf file loaded into flash")
 
     def send_continue(self):
-        self.comment("Continuing code")
+        self.logger.debug("Continuing code")
         self.gdb.sendline("continue")
         self.gdb.expect_exact("Continuing.")
-        self.comment("Code now running.")
+        self.info("Code now running.")
 
     def send_control_c(self):
-        self.comment("Sending Ctrl+C")
+        self.logger.info("Sending Ctrl+C")
         self.gdb.sendcontrol('c')
         self.gdb.expect_exact("(gdb)")
 
     def run_to_label(self, label):
         # improve this with custom exceptions!!!!
+        self.logger.info("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
         try:
-            address = elf_parser.get_address_of_label(self.fi, label) # this will throw an exception if label not found
+            address = elf_parser.get_address_of_label(self.elf_file, label) # this will throw an exception if label not found
         except:
-            self.comment("Could not find label: {l}".format(l = label))
+            self.logger.critical("Could not find label: {l}".format(l = label))
             return False
-        self.comment("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
-        self.comment("break *{a:#X}".format(a = address))
+        self.logger.debug("break *{a:#X}".format(a = address))
         self.gdb.sendline("break *{a:#x}".format(a = address))
         try:
             self.gdb.expect_exact("(gdb)")
             self.gdb.sendline("continue")
             self.gdb.expect("Breakpoint.*\(gdb\)")
-            self.comment("Hit breakpoint")
+            self.logger.debug("Hit breakpoint")
             self.delete_all_breakpoints()
             return True
-        except:
-            self.comment("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
+        except Exception as e:
+            self.logger.critical("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
             return False
 
     def run_to_function(self, f_name):
-        self.comment("Attempting to run to label {l}".format(l = f_name))
-        self.comment("break {l}".format(l = f_name))
+        self.logger.info("Attempting to run to label {l}".format(l = f_name))
+        self.logger.debug("break {l}".format(l = f_name))
         self.gdb.sendline("break {l}".format(l = f_name))
         try:
             self.gdb.expect_exact("(gdb)")
             self.gdb.sendline("continue")
             self.gdb.expect("Breakpoint.*\(gdb\)")
-            self.comment("Hit breakpoint")
+            self.logger.info("Hit breakpoint")
             self.delete_all_breakpoints()
             return True
         except:
-            self.comment("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
+            self.logger.critical("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
             return False
 
@@ -123,7 +124,7 @@ class GDBInterface:
         self.gdb.expect_exact("Delete all breakpoints? (y or n) ")
         self.gdb.sendline("y")
         self.gdb.expect_exact("(gdb)")
-        self.comment("All previous breakpoints deleted")
+        self.logger.info("All previous breakpoints deleted")
 
     def get_function_prototype(self, f_name):
         self.gdb.sendline("info functions ^{f}$".format(f=f_name))
@@ -177,5 +178,3 @@ class GDBInterface:
         self.gdb.sendline("finish")
         self.gdb.expect_exact("Run till exit from")
         self.gdb.expect_exact("(gdb)")
-
-

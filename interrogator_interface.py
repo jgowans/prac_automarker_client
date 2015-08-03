@@ -5,25 +5,6 @@ import re
 import shlex, subprocess
 import time
 
-class OpenOCD:
-    def __init__(self, comment):
-        self.comment = comment
-        comment("Attempting to launch OpenOCD")
-        openocdcmd = shlex.split("openocd -f interface/stlink-v2.cfg -f target/stm32f0x_stlink.cfg -c init -c \"reset halt\"")
-        self.openocd = subprocess.Popen(openocdcmd, stderr=subprocess.DEVNULL)
-        time.sleep(0.5)
-        if self.openocd.poll() == None:
-            comment("OpenOCD running")
-        else:
-            raise Exception("OpenOCD not running, but should be")
-    def __enter__(self):
-        return self
-    def __exit__(self, type, value, traceback):
-        self.openocd.kill()
-    def poll(self):
-        return self.openocd.poll()
-
-
 class InterrogatorInterface:
     def __init__(self):
         self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=20)
