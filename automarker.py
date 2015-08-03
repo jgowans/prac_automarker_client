@@ -19,7 +19,7 @@ logger = logging.getLogger()
 BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
 logger.info("Automarker beginning execution")
 
-groupman = group_manager.GroupManager("/tmp/groups.csv")
+groupman = group_manager.GroupManager(base_dir)
 
 # iterate through the folder, assigning a directory to each group
 sub_dirs = os.listdir(BASE_DIR)
