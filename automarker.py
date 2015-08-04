@@ -22,6 +22,8 @@ console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FO
 logger.addHandler(console_handler)
 
 BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
+COMMON_DIR = "/tmp/common_dir_{t}".format(t = time.strftime("%Y_%m_%d_%H_%M"))
+os.mkdir(COMMON_DIR)
 logger.info("Automarker beginning execution")
 
 groupman = group_manager.GroupManager(base_dir)
@@ -34,8 +36,11 @@ for group in groupman:
     group_comment_logger.setLevel(logging.INFO)
     logger.addHandler(group_comment_logger)
     try:
+        group.find_group_dir(BASE_DIR)
+        group.delete_elfs()
         group.find_src_file()
         group.prepend_stdnums()
+        group.copy_source_to_common_dir(COMMON_DIR)
         with Prac1Tests(group, logger.getChild('prac1')) as tests:
             tests.run_tests()
     except Exception as e:

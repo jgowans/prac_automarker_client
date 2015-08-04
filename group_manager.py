@@ -25,17 +25,17 @@ class GroupManager:
                     self.groups.append(Group(members,
                                              group_id,
                                              base_dir,
-                                             self.logger.getChild("group_{m}".format(m=members))))
+                                             self.logger.getChild("group".format(m=members))))
 
     def __iter__(self):
         self.iter_pointer = 0
         return self
 
     def __next__(self):
-        if self.group_pointer == len(self.groups):
+        if self.iter_pointer == len(self.groups):
             raise StopIteration
         self.group_pointer += 1
-        return self.groups[self.group_pointer - 1]
+        return self.groups[self.iter_pointer - 1]
 
     def generate_marks_file(self, csv_old, csv_new):
         rows = []
@@ -43,15 +43,12 @@ class GroupManager:
             old_reader = csv.reader(fi)
             for row in old_reader:
                 rows.append(row)
-        for group in self.groups:
+        for group in self:
             for row_to_check in rows:
-                if (len(row_to_check) == 4) and (group.group_id == row_to_check[1]): # std num found in Group column
-                        group_row[3] = group.mark # group_row should be a reference to a row in rows, so this should update rows.
+                if (len(row_to_check) == 4) and (group.group_id == row_to_check[1]):
+                        group_row[3] = group.mark 
                         break  # the mark has been assigned - get out of inner loop
-        # write back        
         with open(csv_new, 'w') as fi:
             new_writer = csv.writer(fi)
             for row in rows:
                 new_writer.writerow(row)
-
-
