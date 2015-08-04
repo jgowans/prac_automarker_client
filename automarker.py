@@ -41,10 +41,11 @@ for group in groupman:
         group.find_src_file()
         group.prepend_stdnums()
         group.copy_source_to_common_dir(COMMON_DIR)
-        with Prac1Tests(group, logger.getChild('prac1')) as tests:
-            tests.run_tests()
+        with Prac1Tests(group, logger.getChild('prac1')) as tester:
+            tester.build()
+            tester.run_tests()
     except Exception as e:
-        pass
+        logger.critical(str(e))
     finally:
         group_comment_logger.close()
         logger.removeHandler(group_comment_logger)
