@@ -11,9 +11,14 @@ class OpenOCD:
             comment("OpenOCD running")
         else:
             raise Exception("OpenOCD not running, but should be")
+
+    def exit(self):
+        self.openocd.kill()
+
     def __enter__(self):
         return self
     def __exit__(self, type, value, traceback):
-        self.openocd.kill()
+        self.exit()
+
     def poll(self):
         return self.openocd.poll()

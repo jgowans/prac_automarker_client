@@ -15,10 +15,14 @@ class GDBInterface:
         self.gdb.sendline("set logging on")
         self.gdb.expect_exact("Copying output to")
         self.gdb.expect_exact("(gdb)")
+
+    def terminate(self):
+        self.gdb.terminate()
+
     def __enter__(self):
         return self
     def __exit__(self, type, value, traceback):
-        self.gdb.terminate(True)
+        self.terminate()
 
     def open_file(self, elf_file):
         self.elf_file = elf_file
