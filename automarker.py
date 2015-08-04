@@ -8,67 +8,45 @@ import time
 import csv
 import group_manager
 
-logging.basicConfig(filename = "/tmp/prac{p}_{t}.log".format(p = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())), \
-        level=logging.INFO, format="%(asctime)s:" + logging.BASIC_FORMAT)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-console.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
-logging.getLogger().addHandler(console)
+PRACNUMBER = 1
+
 logger = logging.getLogger()
+logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
+    p = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())))
+logfile_handler.setLevel(level=logging.DEBUG)
+logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
+logger.addHandler(logfile_handler)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
+logger.addHandler(console_handler)
 
 BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
 logger.info("Automarker beginning execution")
 
 groupman = group_manager.GroupManager(base_dir)
-
-# iterate through the folder, assigning a directory to each group
-sub_dirs = os.listdir(BASE_DIR)
-groupman.restart()
-while (groupman.has_next() == True):
-    group = groupman.next()
+for group in groupman:
+    logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + group.members + ':' + logging.BASIC_FORMAT))
+    console_handler.setFormatter(logging.Formatter("%(asctime)s:" + group.members + ':' + logging.BASIC_FORMAT))
     logger.info("====Starting to deal with group: {g}====".format(g=group.members))
-    group_dirs = []
-    for d in sub_dirs:
-        directory_match = True 
-        for stdnum in group.members:
-            if stdnum not in d.upper():
-                directory_match = False
-        if directory_match == True:
-             group_dirs.append(BASE_DIR + d)
-    if len(group_dirs) == 0:
-        logger.info("No submission found for: " + str(group.members))
-        group.comment("No submissions for group.")
-    elif len(group_dirs) == 1:
-        group.comment("Directory \"{}\" assigned to group".format(str(group_dirs[0]), str(group.members)))
-        if os.path.isdir(group_dirs[0] + "/Submission attachment(s)"):
-            group.comment("Submission directory found. Proceeding.")
-            group.directory = group_dirs[0]
-            group.get_submissiontime()
-            group.unzip_submission()
-            group.find_src_file()
-            group.prepend_stdnums()
-            group.build_submission()
-            group.run_tests()
-        else:
-            group.comment("No attachments found.")
-        group.write_comments_file()
-        group.clean()
-    else:
-        group.comment("This should never happen. Contact me.")
+    group_comment_logger = logging.FileHandler("{d}/comments.txt".format(d = group.group_directory), 'w')
+    group_comment_logger.setFormatter('%(levelname)s:%(name)s:%(message)s')
+    group_comment_logger.setLevel(logging.INFO)
+    logger.addHandler(group_comment_logger)
+    try:
+        group.find_src_file()
+        group.prepend_stdnums()
+        with Prac1Tests(group, logger.getChild('prac1')) as tests:
+            tests.run_tests()
+    except Exception as e:
+        pass
+    finally:
+        group_comment_logger.close()
+        logger.removeHandler(group_comment_logger)
+        logger.debug("Closed and removed group handler")
 
+logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
+console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 logger.info("Generating marks file")
 groupman.generate_marks_file("/tmp/Practical{p}/grades.csv".format(p = PRACNUMBER), \
         "/tmp/Practical{p}/grades_new.csv".format(p = PRACNUMBER))
-
-#groupman.restart()
-#while (groupman.has_next() == True):
-#    group = groupman.next()
-#    print(str(group.members) + "  :  " + str(group.directory))
-
-# for each group:
-# take the submission and move it to a working directory. 
-# read timestamp. Compute scaling factor
-# assert compile and link
-# pass .elf to "run tests"
-# scale mark by factor
-# pack mark and comment into a CSV
