@@ -1,14 +1,16 @@
-import pexpect
+import shlex
+import subprocess
+import time
 
 class OpenOCD:
-    def __init__(self, comment):
-        self.comment = comment
-        comment("Attempting to launch OpenOCD")
+    def __init__(self, logger):
+        self.logger = logger
+        self.logger.debug("Attempting to launch OpenOCD")
         openocdcmd = shlex.split("openocd -f interface/stlink-v2.cfg -f target/stm32f0x_stlink.cfg -c init -c \"reset halt\"")
         self.openocd = subprocess.Popen(openocdcmd, stderr=subprocess.DEVNULL)
         time.sleep(0.5)
         if self.openocd.poll() == None:
-            comment("OpenOCD running")
+            self.logger.info("OpenOCD running")
         else:
             raise Exception("OpenOCD not running, but should be")
 

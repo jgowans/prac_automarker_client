@@ -1,6 +1,7 @@
 import logging
 import zipfile
 import shutil
+import os
 
 class NoDirectoryForGroup(Exception):
     pass
@@ -15,19 +16,21 @@ class Group:
     def __init__(self, members, group_id, base_dir, logger=logging.getLogger(__name__)):
         self.logger = logger
         self.members = members
-        self.comment_arr = []
+        self.group_id = group_id
         self.mark = 0
         self.src_file = None
 
-    def find_group_dir(self, base_dir)
+    def find_group_dir(self, base_dir):
         directories = os.listdir(base_dir)
         for directory in directories:
-            if group_id in directory:
+            if self.group_id in directory:
                 self.group_directory = "{base}/{d}/".format(base = base_dir, d = directory)
                 self.submission_directory = "{base}/Submission attachment(s)/".format(base = self.group_directory)
                 self.logger.debug("Using dir: {d}".format(d = self.submission_directory))
                 return
-        raise NoDirectoryForGroup
+        print(self.members)
+        print(self.group_id)
+        raise NoDirectoryForGroup("No dir for members: {m}, id: {gid}".format(m = self.members, gid = self.group_id))
 
     def delete_elfs(self):
         os.chdir(self.submission_directory)
@@ -56,8 +59,8 @@ class Group:
         assembly_files = [fi for fi in all_files if fi.endswith(".s")]
         if len(assembly_files) == 1:
             self.src_file = assembly_files[0]
-            self.comment("Only 1 .s file submitted, namely: {}".format(self.src_file))
-        if len(assembly_files) > 1:
+            self.logger.info("Only 1 .s file submitted, namely: {}".format(self.src_file))
+        elif len(assembly_files) > 1:
             self.logger.critical("Multiple .s files. Not sure which to mark. Aborting")
             raise MultipleSourceFilesFound()
         else:

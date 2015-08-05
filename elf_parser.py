@@ -6,13 +6,11 @@ def get_address_of_label(elf, label):
         raise Exception
     out = objdump.communicate()
     lines = out[0].splitlines()
-    for l in lines:
-        if label in l.decode():
-            clean_l = l.decode().strip()
-            split_l = clean_l.split()
-            address_str = split_l[0]
+    for line in lines:
+        line = l.decode().strip().split()
+        if (len(l) == 5) and (l[4] == label):
+            address_str = line[0]
             return int(address_str, 16)
-
     raise Exception("Label {} not found in .elf file".format(label))
 
 def get_text_size(elf):

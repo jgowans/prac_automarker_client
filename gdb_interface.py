@@ -2,6 +2,13 @@ import pexpect
 import re
 import elf_parser
 
+class GDBException(Exception):
+    pass
+class BreakpointNotHit(GDBException):
+    pass
+class LabelNotFound(GDBException):
+    pass
+
 class GDBInterface:
     def __init__(self, logger):
         self.logger = logger
@@ -75,13 +82,12 @@ class GDBInterface:
         self.gdb.expect_exact("(gdb)")
 
     def run_to_label(self, label):
-        # improve this with custom exceptions!!!!
-        self.logger.info("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
         try:
             address = elf_parser.get_address_of_label(self.elf_file, label) # this will throw an exception if label not found
+            self.logger.info("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
         except:
             self.logger.critical("Could not find label: {l}".format(l = label))
-            return False
+            raise LabelNotFound
         self.logger.debug("break *{a:#X}".format(a = address))
         self.gdb.sendline("break *{a:#x}".format(a = address))
         try:
@@ -92,9 +98,9 @@ class GDBInterface:
             self.delete_all_breakpoints()
             return True
         except Exception as e:
-            self.logger.critical("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
+            self.logger.critical("Breakpoint not hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
-            return False
+            raise BreakpointNotHit
 
     def run_to_function(self, f_name):
         self.logger.info("Attempting to run to label {l}".format(l = f_name))
@@ -128,7 +134,7 @@ class GDBInterface:
         self.gdb.expect_exact("Delete all breakpoints? (y or n) ")
         self.gdb.sendline("y")
         self.gdb.expect_exact("(gdb)")
-        self.logger.info("All previous breakpoints deleted")
+        self.logger.debug("All previous breakpoints deleted")
 
     def get_function_prototype(self, f_name):
         self.gdb.sendline("info functions ^{f}$".format(f=f_name))

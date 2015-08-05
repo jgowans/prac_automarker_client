@@ -18,7 +18,6 @@ class PracTests:
             time.sleep(0.2)
             self.ii.reset(1) # release NRST to allow openocd to connect
             with GDBInterface(self.logger.getChild('gdb')) as self.gdb:
-                gdb.connect()
                 # must be implemented in subclass
                 self.run_specific_prac_tests()
 
