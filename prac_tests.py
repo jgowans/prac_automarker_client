@@ -3,7 +3,11 @@ from openocd import OpenOCD
 from gdb_interface import GDBInterface
 from interrogator_interface import InterrogatorInterface
 
-class TestFailedError(Exception):
+class PracFailedError(Exception):
+    pass
+class TestFailedError(PracFailedError):
+    pass
+class BuildFailedError(PracFailedError):
     pass
 
 class PracTests:

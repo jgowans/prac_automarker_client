@@ -7,8 +7,10 @@ import logging
 import time
 import csv
 import group_manager
-from prac_tests import TestFailedError
+from prac_tests import PracFailedError
 from prac1_tests import Prac1Tests
+from group import GroupSourceFileProblem
+from gdb_interface import GDBException
 
 PRACNUMBER = 1
 
@@ -47,7 +49,11 @@ for group in groupman:
         tester =  Prac1Tests(group, logger.getChild('prac1'))
         tester.build()
         tester.run_tests()
-    except TestFailedError as e:
+    except PracFailedError as e:
+        logger.critical(str(e))
+    except GroupSourceFileProblem as e:
+        logger.critical(str(e))
+    except GDBException as e:
         logger.critical(str(e))
     finally:
         group_comment_logger.close()

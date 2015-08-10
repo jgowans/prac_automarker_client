@@ -5,11 +5,13 @@ import os
 
 class NoDirectoryForGroup(Exception):
     pass
-class NoSourceFileFound(Exception):
+class GroupSourceFileProblem(Exception):
     pass
-class MultipleSourceFilesFound(Exception):
+class NoSourceFileFound(GroupSourceFileProblem):
     pass
-class IncorrectNumberOfZipsFound(Exception):
+class MultipleSourceFilesFound(GroupSourceFileProblem):
+    pass
+class IncorrectNumberOfZipsFound(GroupSourceFileProblem):
     pass
 
 class Group:
@@ -28,8 +30,6 @@ class Group:
                 self.submission_directory = "{base}/Submission attachment(s)/".format(base = self.group_directory)
                 self.logger.debug("Using dir: {d}".format(d = self.submission_directory))
                 return
-        print(self.members)
-        print(self.group_id)
         raise NoDirectoryForGroup("No dir for members: {m}, id: {gid}".format(m = self.members, gid = self.group_id))
 
     def delete_elfs(self):
@@ -75,8 +75,8 @@ class Group:
             f.write(stdnum_str + src_code)
 
     def copy_source_to_common_dir(self, directory):
-        file_name = "{m0}_{m1}".format(m0 = self.members[0],
-                                       m1 = self.members[1])
+        members = self.members.replace(' ', '_')
+        file_name = "{m}.s".format(m = members)
         source_path = "{base}/{src}".format(base = self.submission_directory, src = self.src_file)
         destination_path = "{d}/{f}".format(d = directory, f = file_name)
         shutil.copyfile(source_path, destination_path)

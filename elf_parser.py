@@ -7,8 +7,8 @@ def get_address_of_label(elf, label):
     out = objdump.communicate()
     lines = out[0].splitlines()
     for line in lines:
-        line = l.decode().strip().split()
-        if (len(l) == 5) and (l[4] == label):
+        line = line.decode().strip().split()
+        if (len(line) == 5) and (line[4] == label):
             address_str = line[0]
             return int(address_str, 16)
     raise Exception("Label {} not found in .elf file".format(label))

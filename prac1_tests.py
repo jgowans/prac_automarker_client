@@ -1,7 +1,7 @@
 import elf_parser
 import time, os
 import subprocess
-from prac_tests import PracTests, TestFailedError
+from prac_tests import PracTests, TestFailedError, BuildFailedError
 
 class Prac1Tests(PracTests):
     def build(self):
@@ -27,7 +27,7 @@ class Prac1Tests(PracTests):
             self.logger.info("Linker process ran successfully")
         except subprocess.CalledProcessError as e:
             self.logger.info("Received build error: \n{err}".format(err = e.output))
-            raise e
+            raise BuildFailedError
 
     def run_specific_prac_tests(self):
         self.gdb.open_file('main.elf')
@@ -63,7 +63,7 @@ class Prac1Tests(PracTests):
             raise TestFailedError
 
     def part_2_tests(self):
-        for i in range(11, 21):
+        for i in range(11, 20):
             self.gdb.run_to_label('main_loop')
             if self.assert_led_value(i) == False:
                 self.logger.critical("Wrong")
@@ -76,6 +76,10 @@ class Prac1Tests(PracTests):
         self.logger.info("Mark set to {m}".format(m = self.group.mark))
 
     def part_3_tests(self):
+        self.gdb.run_to_label('main_loop')
+        if self.assert_led_value(20) == False:
+            self.logger.critical("LEDs did not count all the way to 20")
+            raise TestFailedError
         self.gdb.run_to_label('main_loop')
         if self.assert_led_value(10) == False:
             self.logger.critical("LEDs did not wrap to 10")

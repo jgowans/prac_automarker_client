@@ -12,7 +12,7 @@ class LabelNotFound(GDBException):
 class GDBInterface:
     def __init__(self, logger):
         self.logger = logger
-        self.gdb = pexpect.spawn("arm-none-eabi-gdb", timeout=3)
+        self.gdb = pexpect.spawn("arm-none-eabi-gdb", timeout=10)
         self.gdb.expect_exact("(gdb)")
         # disables the "Type <return> to continue, or q <return> to quit"
         self.gdb.sendline("set pagination off")
@@ -96,7 +96,6 @@ class GDBInterface:
             self.gdb.expect("Breakpoint.*\(gdb\)")
             self.logger.debug("Hit breakpoint")
             self.delete_all_breakpoints()
-            return True
         except Exception as e:
             self.logger.critical("Breakpoint not hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
