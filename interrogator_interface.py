@@ -5,6 +5,9 @@ import re
 import shlex, subprocess
 import time
 
+class LEDTimingTimeout(Exception):
+    pass
+
 class InterrogatorInterface:
     def __init__(self):
         self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=20)
@@ -74,7 +77,7 @@ class InterrogatorInterface:
         else:
             return cycles/48e6 # running at 48 MHz
 
-    def transition_timing(self, pattern0, pattern1):
+    def timing_transition(self, pattern0, pattern1):
         pattern0 = pattern0 & 0xFF
         pattern1 = pattern1 & 0xFF
         self.ser.flushInput()
@@ -83,7 +86,7 @@ class InterrogatorInterface:
         resp = self.wait_for_OK() # something like: [b'PATTERN_TIMING 0xAA5\r\n5', b'TIMING: 23889736\r\n']
         cycles = int(resp[1].split()[1]) # second line, second word.
         if cycles == -1:
-            return -1 # could not find patterns
+            raise LEDTimingTimeout()
         else:
             return cycles/48e6 # running at 48 MHz
 

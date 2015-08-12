@@ -7,12 +7,10 @@ import logging
 import time
 import csv
 import group_manager
-from prac_tests import PracFailedError
-from prac1_tests import Prac1Tests
+from prac_tests import BuildFailedError
 from group import GroupSourceFileProblem
-from gdb_interface import GDBException
 
-PRACNUMBER = 1
+PRACNUMBER = 2
 
 logger = logging.getLogger()
 logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
@@ -46,15 +44,13 @@ for group in groupman:
         group.find_src_file()
         group.prepend_stdnums()
         group.copy_source_to_common_dir(COMMON_DIR)
-        tester =  Prac1Tests(group, logger.getChild('prac1'))
+        tester =  Prac2Tests(group, logger.getChild('prac2'))
         tester.build()
         tester.run_tests()
-    except PracFailedError as e:
-        logger.critical(str(e))
+    except BuildFailedError as e:
+        logger.critical("Build Failed. Exiting")
     except GroupSourceFileProblem as e:
-        logger.critical(str(e))
-    except GDBException as e:
-        logger.critical(str(e))
+        logger.critical("Could not assigned a source file. Exiting")
     finally:
         group_comment_logger.close()
         logger.removeHandler(group_comment_logger)

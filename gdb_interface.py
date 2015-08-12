@@ -74,7 +74,7 @@ class GDBInterface:
         self.logger.debug("Continuing code")
         self.gdb.sendline("continue")
         self.gdb.expect_exact("Continuing.")
-        self.info("Code now running.")
+        self.logger.info("Code now running.")
 
     def send_control_c(self):
         self.logger.info("Sending Ctrl+C")
