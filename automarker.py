@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = "1"
-
 import os
 import logging
 import time
@@ -9,6 +7,7 @@ import csv
 import group_manager
 from prac_tests import BuildFailedError
 from group import GroupSourceFileProblem
+from prac2_tests import Prac2Tests
 
 PRACNUMBER = 2
 

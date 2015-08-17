@@ -3,6 +3,7 @@ import time, os
 import subprocess
 from prac_tests import PracTests, TestFailedError, BuildFailedError
 import interrogator_interface
+import gdb_interface
 
 class Prac2Tests(PracTests):
     def build(self):

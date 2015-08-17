@@ -15,7 +15,7 @@ class IncorrectNumberOfZipsFound(GroupSourceFileProblem):
     pass
 
 class Group:
-    def __init__(self, members, group_id, base_dir, logger=logging.getLogger(__name__)):
+    def __init__(self, members, group_id, logger=logging.getLogger(__name__)):
         self.logger = logger
         self.members = members
         self.group_id = group_id

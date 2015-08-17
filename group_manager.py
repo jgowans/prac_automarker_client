@@ -25,7 +25,6 @@ class GroupManager:
                     group_id = gradeline[1]
                     self.groups.append(Group(members,
                                              group_id,
-                                             self.base_dir,
                                              self.logger.getChild("group".format(m=members))))
 
     def __iter__(self):

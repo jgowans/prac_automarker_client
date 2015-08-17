@@ -59,7 +59,10 @@ class InterrogatorInterface:
         self.ser.flushInput()
         self.ser.write("GPIO_READ 0\r".encode())
         resp = self.wait_for_OK() #something like: [b'GPIO_READ 0\r\n', b'INPUTS: AA\r\n', b'> ']
-        assert(resp[0] == b'GPIO_READ 0\r\n') 
+        try:
+            assert(resp[0] == b'GPIO_READ 0\r\n') 
+        except:
+            raise Exception(resp[0])
         inputs = resp[1] # something like:  b'INPUTS: AA\r\n'
         inputs = inputs.split() # [b'INPUTS:', b'AA']
         return int(inputs[1], 16)
