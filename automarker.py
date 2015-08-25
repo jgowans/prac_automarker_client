@@ -7,9 +7,9 @@ import csv
 import group_manager
 from prac_tests import BuildFailedError
 from group import GroupSourceFileProblem
-from prac2_tests import Prac2Tests
+from prac3_tests import Prac3Tests
 
-PRACNUMBER = 2
+PRACNUMBER = 3
 
 logger = logging.getLogger()
 logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
@@ -43,7 +43,7 @@ for group in groupman:
         group.find_src_file()
         group.prepend_stdnums()
         group.copy_source_to_common_dir(COMMON_DIR)
-        tester =  Prac2Tests(group, logger.getChild('prac2'))
+        tester =  Prac3Tests(group, logger.getChild('prac{n}'.format(n = PRACNUMBER)))
         tester.build()
         tester.run_tests()
     except BuildFailedError as e:

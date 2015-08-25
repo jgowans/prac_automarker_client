@@ -22,6 +22,10 @@ class Group:
         self.mark = 0
         self.src_file = None
 
+    def increment_mark(self, val):
+        self.mark += val
+        self.logger.info("Mark set to {m}".format(m = self.mark))
+
     def find_group_dir(self, base_dir):
         directories = os.listdir(base_dir)
         for directory in directories:

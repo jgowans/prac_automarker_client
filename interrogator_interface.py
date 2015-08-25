@@ -10,7 +10,10 @@ class LEDTimingTimeout(Exception):
 
 class InterrogatorInterface:
     def __init__(self):
-        self.ser = serial.Serial("/dev/ttyS0", 115200, timeout=20)
+        self.ser = serial.Serial("/dev/ttyUSB0", baudrate=115200, timeout=10)
+        self.ser.setBaudrate(9600)
+        self.ser.setBaudrate(115200)
+        self.comms_test()
 
     def wait_for_OK(self):
         all_received = []
