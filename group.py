@@ -22,6 +22,17 @@ class Group:
         self.mark = 0
         self.src_file = None
 
+    def find_group_files(self):
+        self.files = []
+        self.files_for_plag_checking = []
+        os.chdir(self.submission_directory)
+        all_files = os.listdir()
+        s_files = [fi for fi in all_files if fi.endswith(".s")]
+        self.files += s_files
+        makefiles = [fi for fi in all_files if fi.endswith("akefile")]
+        self.files += makefiles
+
+
     def increment_mark(self, val):
         self.mark += val
         self.logger.info("Mark set to {m}".format(m = self.mark))
@@ -36,16 +47,6 @@ class Group:
                 return
         raise NoDirectoryForGroup("No dir for members: {m}, id: {gid}".format(m = self.members, gid = self.group_id))
 
-    def delete_elfs(self):
-        os.chdir(self.submission_directory)
-        all_files = os.listdir()
-        elf_files = [fi for fi in all_files if fi.endswith(".elf")]
-        if len(elf_files) > 0:
-            self.logger.debug("Elf files exist before building: {e}".format(e = elf_files))
-            for elf in elf_files:
-                os.remove(elf)
-            self.logger.debug("Elf files deleted")
-    
     def unzip_submission(self):
         os.chdir(self.submission_directory)
         zip_files = [fi for fi in all_files if fi.endswith(".zip")]
@@ -57,28 +58,15 @@ class Group:
             z.extractall()
         self.delete_elfs()
 
-    def find_src_file(self):
-        os.chdir(self.submission_directory)
-        all_files = os.listdir()
-        assembly_files = [fi for fi in all_files if fi.endswith(".s")]
-        if len(assembly_files) == 1:
-            self.src_file = assembly_files[0]
-            self.logger.info("Only 1 .s file submitted, namely: {}".format(self.src_file))
-        elif len(assembly_files) > 1:
-            self.logger.critical("Multiple .s files. Not sure which to mark. Aborting")
-            raise MultipleSourceFilesFound()
-        else:
-            self.logger.critical("No suitable source file found out of: {fi}".format(fi = all_files))
-            raise NoSourceFileFound()
-
     def prepend_stdnums(self):
+        # iterate through all files_for_plagiarism and add a comment
         stdnum_str = "@ {m}\n".format(m = str(self.members))
         with open(self.submission_directory + self.src_file, "r") as f:
             src_code = f.read()
         with open(self.submission_directory + self.src_file, "w") as f:
             f.write(stdnum_str + src_code)
 
-    def copy_source_to_common_dir(self, directory):
+    def copy_sources_to_common_dir(self, directory):
         members = self.members.replace(' ', '_')
         file_name = "{m}.s".format(m = members)
         source_path = "{base}/{src}".format(base = self.submission_directory, src = self.src_file)

@@ -96,12 +96,11 @@ class InterrogatorInterface:
         else:
             return cycles/48e6 # running at 48 MHz
 
-    def write_dac(self, to_output):
+    def write_dac(self, channel, value):
+        if (channel != 0) and (channel != 1):
+            raise Exception("Invalid DAC channel")
+        if (value < 0) or (value > 255):
+            raise Exception("DAC value out of bounds")
         self.ser.flushInput()
-        self.ser.write("DAC {val}\r".format(val = to_output).encode())
-        self.wait_for_OK()
-
-    def configure_dac_channel(self, channel, state):
-        self.ser.flushInput()
-        self.ser.write("DAC_SELECT {s:#x}\r".format(s = (channel << 8) | state).encode())
+        self.ser.write("DAC {val:#x}\r".format(val = ((channel << 8) + value)).encode())
         self.wait_for_OK()

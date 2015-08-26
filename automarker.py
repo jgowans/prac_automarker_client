@@ -7,9 +7,9 @@ import csv
 import group_manager
 from prac_tests import BuildFailedError
 from group import GroupSourceFileProblem
-from prac3_tests import Prac3Tests
+from prac4_tests import Prac4Tests
 
-PRACNUMBER = 3
+PRACNUMBER = 4
 
 logger = logging.getLogger()
 logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
@@ -39,17 +39,14 @@ for group in groupman:
     group_comment_logger.setLevel(logging.INFO)
     logger.addHandler(group_comment_logger)
     try:
-        group.delete_elfs()
-        group.find_src_file()
-        group.prepend_stdnums()
-        group.copy_source_to_common_dir(COMMON_DIR)
-        tester =  Prac3Tests(group, logger.getChild('prac{n}'.format(n = PRACNUMBER)))
+        group.find_group_files()
+        #group.prepend_stdnums()
+        #group.copy_source_to_common_dir(COMMON_DIR)
+        tester =  Prac4Tests(group, logger.getChild('prac{n}'.format(n = PRACNUMBER)))
         tester.build()
         tester.run_tests()
     except BuildFailedError as e:
         logger.critical("Build Failed. Exiting")
-    except GroupSourceFileProblem as e:
-        logger.critical("Could not assigned a source file. Exiting")
     finally:
         group_comment_logger.close()
         logger.removeHandler(group_comment_logger)
