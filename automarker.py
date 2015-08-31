@@ -40,6 +40,7 @@ for group in groupman:
     logger.addHandler(group_comment_logger)
     try:
         group.find_group_files()
+        group.get_submissiontime()
         #group.prepend_stdnums()
         #group.copy_source_to_common_dir(COMMON_DIR)
         tester =  Prac4Tests(group, logger.getChild('prac{n}'.format(n = PRACNUMBER)))

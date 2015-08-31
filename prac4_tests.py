@@ -24,9 +24,9 @@ class Prac4Tests(PracTests):
         self.logger.info("The DATA block is a tad longer and now the best pair should be 0xFF and 0x02")
         self.logger.info("Running 'make' in submission directory")
         try:
-            self.exec_as_marker("make")
-        except subprocess.CalledProcessError as e:
-            self.logger.info("Received build error: \n{err}".format(err = e.output))
+            self.exec_as_marker("timeout 5 make")
+        except BuildFailedError as e:
+            self.logger.info("Received build error. Aborting")
             raise BuildFailedError
         all_files = os.listdir()
         elf_files = [fi for fi in all_files if fi.endswith(".elf")]
@@ -63,6 +63,9 @@ class Prac4Tests(PracTests):
             self.logger.critical("LEDs timing checker timed out before finding expected patterns")
         except gdb_interface.GDBException as e:
             self.logger.critical("Your program did not respond the way GDB expected it to")
+        finally:
+            self.logger.info("---- Checking submission time ----")
+            self.adjust_mark()
 
 
     def assert_led_value(self, val):
@@ -106,6 +109,9 @@ class Prac4Tests(PracTests):
         self.group.increment_mark(1)
 
     def part_2_tests(self):
+        self.part_2_incorrect = False
+        self.part_2_top = 0x02
+        self.part_2_second = 0xFF
         self.gdb.run_to_label('closest_pair_finding_done')
         sp = self.gdb.get_variable_value("$sp")
         self.logger.info("SP found to hold the value: {sp:#x}".format(sp = sp))
@@ -114,30 +120,56 @@ class Prac4Tests(PracTests):
         top = self.gdb.read_word(sp)
         self.logger.info("At address {sp:#x} found: {v:#x}".format(sp = sp, v = top))
         if top != 0x02:
-            self.logger.critical("Incorrect. Aborting")
-            raise TestFailedError
+            self.logger.critical("Incorrect. A note has been made to rather look for the pattern your code has found")
+            self.part_2_incorrect = True
+            self.part_2_top = (top & 0xFF)
         second = self.gdb.read_word(sp+4)
         self.logger.info("At address {sp:#x} found: {v:#x}".format(sp = sp+4, v = second))
         if (second != 0xFFFFFFFF) and (second != 0xFF):
-            self.logger.critical("Incorrect. Aborting")
-            raise TestFailedError
-        self.logger.info("Correct!")
-        self.group.increment_mark(2)
+            self.logger.critical("Incorrect. A note has been made to rather look for the pattern your code has found")
+            self.part_2_second = (second & 0xFF)
+            self.part_2_incorrect = True
+        if self.part_2_incorrect == True:
+            self.logger.info("Not awarding marks for part 2, but still attempitng to mark the rest. This may or may not work....")
+        else:
+            self.logger.info("Correct!")
+            self.group.increment_mark(2)
 
     def part_3_tests(self):
         self.gdb.send_continue()
-        self.logger.info("Checking timing for pattern transition: {p0:#X}->{p1:#X}".format(
-            p0 = 0xFF, p1 = 0x02))
-        try:
-            timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
-        except interrogator_interface.LEDTimingTimeout as e:
-            p0 = self.ii.read_port(0)
-            time.sleep(1)
-            p1 = self.ii.read_port(1)
-            self.logger.critical("LEDs did not seem to display expected pattern")
-            self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
-                p0 = p0, p1 = p1))
-            return
+        if self.part_2_incorrect == True:
+            self.logger.info("Attempting to find either the transition: {p0:#x}->{p1:#x} or {p2:#x}->{p3:#x}".format(
+                p0 = 0xFF, p1 = 0x02, p2 = self.part_2_top, p3 = self.part_2_second))
+            try:
+                timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+                self.part_2_top = 0xFF
+                self.part_2_second = 0x02
+            except interrogator_interface.LEDTimingTimeout as e:
+                try:
+                    timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
+                except interrogator_interface.LEDTimingTimeout as e:
+                    p0 = self.ii.read_port(0)
+                    time.sleep(1.5)
+                    p1 = self.ii.read_port(1)
+                    self.logger.critical("Could not find either patterns.")
+                    self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
+                        p0 = p0, p1 = p1))
+                    return
+        else:
+            self.logger.info("Checking timing for pattern transition: {p0:#X}->{p1:#X}".format(
+                p0 = 0xFF, p1 = 0x02))
+            try:
+                timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+                self.part_2_top = 0xFF
+                self.part_2_second = 0x02
+            except interrogator_interface.LEDTimingTimeout as e:
+                p0 = self.ii.read_port(0)
+                time.sleep(1.5)
+                p1 = self.ii.read_port(1)
+                self.logger.critical("LEDs did not seem to display expected pattern")
+                self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
+                    p0 = p0, p1 = p1))
+                return
         self.logger.info("Timing should be 1.5 seconds. Found to be {t} seconds.".format(t=timing))
         if (timing >= 1.5*0.95) and (timing <= 1.5*1.05):
             self.logger.info("Correct")
@@ -154,10 +186,10 @@ class Prac4Tests(PracTests):
         time.sleep(2)
         self.logger.info("Timing should be 0.85 seconds")
         try:
-            timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+            timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             p0 = self.ii.read_port(0)
-            time.sleep(1)
+            time.sleep(0.85)
             p1 = self.ii.read_port(1)
             self.logger.critical("LEDs did not seem to display expected pattern")
             self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
@@ -167,29 +199,29 @@ class Prac4Tests(PracTests):
         if (timing >= 0.85*0.95) and (timing <= 0.85*1.05):
             self.logger.info("Correct")
         else:
-            self.logger.critical("Too far out. Exiting tests")
-            raise TestFailedError
+            self.logger.critical("Too far out.")
+            return
 
         self.logger.info("Setting POT0 to 0x40 and POT1 to 0")
-        self.ii.write_dac(0, 0x40)
+        self.ii.write_dac(0, 0x55)
         time.sleep(2)
-        self.logger.info("Timing should be 0.4 seconds")
+        self.logger.info("Timing should be 0.47 seconds")
         try:
-            timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+            timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             p0 = self.ii.read_port(0)
-            time.sleep(1)
+            time.sleep(0.47)
             p1 = self.ii.read_port(1)
             self.logger.critical("LEDs did not seem to display expected pattern")
             self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
                 p0 = p0, p1 = p1))
             return
         self.logger.info("Found to be {t} seconds.".format(t=timing))
-        if (timing >= 0.4*0.95) and (timing <= 0.4*1.05):
+        if (timing >= 0.47*0.95) and (timing <= 0.47*1.05):
             self.logger.info("Correct")
         else:
-            self.logger.critical("Too far out. Exiting tests")
-            raise TestFailedError
+            self.logger.critical("Too far out.")
+            return
         self.group.increment_mark(2)
 
     def part_5_tests(self):
@@ -199,10 +231,10 @@ class Prac4Tests(PracTests):
         time.sleep(2)
         self.logger.info("Timing should be 0.5 seconds")
         try:
-            timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+            timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             p0 = self.ii.read_port(0)
-            time.sleep(1)
+            time.sleep(0.5)
             p1 = self.ii.read_port(1)
             self.logger.critical("LEDs did not seem to display expected pattern")
             self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
@@ -212,8 +244,8 @@ class Prac4Tests(PracTests):
         if (timing >= 0.5*0.95) and (timing <= 0.5*1.05):
             self.logger.info("Correct")
         else:
-            self.logger.critical("Too far out. Exiting tests")
-            raise TestFailedError
+            self.logger.critical("Too far out.")
+            return
 
         self.logger.info("Setting POT0 to 0x00 and POT1 to 0x0")
         self.ii.write_dac(0, 0)
@@ -221,10 +253,10 @@ class Prac4Tests(PracTests):
         time.sleep(2)
         self.logger.info("Timing should be 0.2 seconds")
         try:
-            timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+            timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             p0 = self.ii.read_port(0)
-            time.sleep(1)
+            time.sleep(0.2)
             p1 = self.ii.read_port(1)
             self.logger.critical("LEDs did not seem to display expected pattern")
             self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
@@ -234,8 +266,8 @@ class Prac4Tests(PracTests):
         if (timing >= 0.2*0.95) and (timing <= 0.2*1.05):
             self.logger.info("Correct")
         else:
-            self.logger.critical("Too far out. Exiting tests")
-            raise TestFailedError
+            self.logger.critical("Too far out.")
+            return
 
         self.logger.info("Setting POT0 to 0xF0 and POT1 to 0xE0")
         self.ii.write_dac(0, 0xF0)
@@ -243,10 +275,10 @@ class Prac4Tests(PracTests):
         time.sleep(2)
         self.logger.info("Timing should be 0.95 seconds")
         try:
-            timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
+            timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             p0 = self.ii.read_port(0)
-            time.sleep(1)
+            time.sleep(0.95)
             p1 = self.ii.read_port(1)
             self.logger.critical("LEDs did not seem to display expected pattern")
             self.logger.info("Rather, seemed to be displaying {p0:#X} and {p1:#X}".format(
@@ -256,7 +288,16 @@ class Prac4Tests(PracTests):
         if (timing >= 0.95*0.95) and (timing <= 0.95*1.05):
             self.logger.info("Correct")
         else:
-            self.logger.critical("Too far out. Exiting tests")
-            raise TestFailedError
+            self.logger.critical("Too far out.")
+            return
 
         self.group.increment_mark(2)
+
+    def adjust_mark(self):
+        if self.group.submission_time < time.strptime("27 August 2015 09:55", "%d %B %Y %H:%M"):
+            self.logger.info("Submitted on time - no adjustment")
+        else:
+            self.logger.info("Submitted after Thursday, 1 mark adjutment")
+            self.group.increment_mark(-1)
+            self.group.mark = max(self.group.mark, 0)
+        self.logger.info("Final mark: {m}".format(m = self.group.mark))

@@ -4,6 +4,7 @@ from gdb_interface import GDBInterface
 from interrogator_interface import InterrogatorInterface
 import subprocess
 import shlex
+import os
 
 class PracFailedError(Exception):
     pass
@@ -31,7 +32,16 @@ class PracTests:
         full_cmd = "sudo -u marker HOME=/home/marker sh -c 'cd /home/marker/; " + cmd + "'"
         self.logger.debug("Exec as marker: {c}".format(c = full_cmd))
         clean_full_cmd = shlex.split(full_cmd)
-        subprocess.check_output(clean_full_cmd, stderr=subprocess.STDOUT, timeout=5)
+        proc = subprocess.Popen(clean_full_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        try:
+            return_code = proc.wait(10)
+        except subprocess.TimeoutExpired:
+            self.logger.critical("Process timed out. Killing it")
+            os.system("sudo -u marker killall -s SIGKILL -u marker")
+            raise BuildFailedError
+        if return_code != 0:
+            self.logger.critical("Non-zero return code received")
+            raise BuildFailedError
 
     def clean_marker_directory(self):
         self.exec_as_marker("rm -rf /home/marker/*")

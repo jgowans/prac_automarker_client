@@ -172,7 +172,7 @@ class GDBInterface:
     def get_variable_value(self, var):
         var_string = "print/x {v}".format(v = var)
         self.gdb.sendline(var_string)
-        if self.gdb.expect(["\$.*\n", "No symbol .* in current context"]) != 0: # expecting something like: $6 = 0x7b
+        if self.gdb.expect(["\$.* = .*\n", "No symbol .* in current context"]) != 0: # expecting something like: $6 = 0x7b
             raise Exception("Symbol not found")
         value = self.gdb.after.decode().split('=')[1].strip() # should get the '0x7b' of the above
         self.gdb.expect_exact("(gdb)")

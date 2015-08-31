@@ -2,6 +2,7 @@ import logging
 import zipfile
 import shutil
 import os
+import time
 
 class NoDirectoryForGroup(Exception):
     pass
@@ -72,3 +73,9 @@ class Group:
         source_path = "{base}/{src}".format(base = self.submission_directory, src = self.src_file)
         destination_path = "{d}/{f}".format(d = directory, f = file_name)
         shutil.copyfile(source_path, destination_path)
+
+    def get_submissiontime(self):
+        with open(str(self.group_directory) + "/timestamp.txt") as timefile:
+            timestamp = timefile.readline() # will return something like: '20140805211624959'
+            self.submission_time = time.strptime(timestamp[0:14], "%Y%m%d%H%M%S") # prune off the miliseconds
+            self.logger.info("Submissiontime of {} assigned".format(time.strftime("%a:%H:%M", self.submission_time)))
