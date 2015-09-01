@@ -18,10 +18,10 @@ class Prac4Tests(PracTests):
             self.logger.critical("Too many or too few .s files found. Should be only 1 .s file. Actual directory contents: {af}".format(af = all_files))
             raise BuildFailedError
         self.logger.info("Found only 1 .s file. Good!")
-        cmd = "sed -i \"s/.word 0xfbe4bc46/.word 0x0674a70b\\n .word 0x0674a70b\\n .word 0x55FF02EE\\n/g\" {f}".format(f = s_files[0])
+        cmd = "sed -i \"s/.word 0xfbe4bc46/.word 0x0674a70b\\n .word 0x0674a70b\\n .word 0x55AA55AA\\n .word 0xFD0155AA\\n/g\" {f}".format(f = s_files[0])
         self.exec_as_marker(cmd)
-        self.logger.info("Your source file has been modified to replace .word 0xfbe4bc46 with .word 0x0674a70b .word 0x0674a70b .word 0x55FF02EE")
-        self.logger.info("The DATA block is a tad longer and now the best pair should be 0xFF and 0x02")
+        self.logger.info("Your source file has been modified to replace .word 0xfbe4bc46 with .word 0x0674a70b .word 0x0674a70b .word 0x55AA55AA 0xFD0155AA")
+        self.logger.info("The DATA block is a tad longer and now the best pair should be 0xFD and 0x01")
         self.logger.info("Running 'make' in submission directory")
         try:
             self.exec_as_marker("timeout 5 make")
@@ -93,7 +93,8 @@ class Prac4Tests(PracTests):
                            0x33c8bf70,
                            0x0674a70b,
                            0x0674a70b,
-                           0x55FF02EE]
+                           0x55AA55AA,
+                           0xFD0155AA]
         self.gdb.run_to_label('copy_to_RAM_done')
         pointer = 0x20000000
         for expected_value in expected_values:
@@ -110,26 +111,30 @@ class Prac4Tests(PracTests):
 
     def part_2_tests(self):
         self.part_2_incorrect = False
-        self.part_2_top = 0x02
-        self.part_2_second = 0xFF
+        self.part_2_top = 0x01
+        self.part_2_second = 0xFD
         self.gdb.run_to_label('closest_pair_finding_done')
         sp = self.gdb.get_variable_value("$sp")
         self.logger.info("SP found to hold the value: {sp:#x}".format(sp = sp))
-        self.logger.info("Expecting the larger of the elements (B) of value 0x02 to be on the top of the stack")
-        self.logger.info("Expecting the smaller element (A) of value 0xFFFFFFFF (or 0xFF) to be second from top")
+        self.logger.info("Expecting the larger of the elements (B) of value 0x01 to be on the top of the stack")
         top = self.gdb.read_word(sp)
         self.logger.info("At address {sp:#x} found: {v:#x}".format(sp = sp, v = top))
-        if top != 0x02:
+        if top != 0x01:
             self.logger.critical("Incorrect. A note has been made to rather look for the pattern your code has found")
             self.part_2_incorrect = True
             self.part_2_top = (top & 0xFF)
         second = self.gdb.read_word(sp+4)
+        self.logger.info("Expecting the smaller element (A) of value 0xFFFFFFFD (or 0xFD) to be second from top")
         self.logger.info("At address {sp:#x} found: {v:#x}".format(sp = sp+4, v = second))
-        if (second != 0xFFFFFFFF) and (second != 0xFF):
+        if (second != 0xFFFFFFFD) and (second != 0xFD):
             self.logger.critical("Incorrect. A note has been made to rather look for the pattern your code has found")
             self.part_2_second = (second & 0xFF)
             self.part_2_incorrect = True
         if self.part_2_incorrect == True:
+            if (self.part_2_top == 0xFFFFFFFD or self.part_2_top == 0xFD) and (self.part_2_second == 0x01):
+                self.logger.info("It seems you only got the order the wrong way around. Awarding 1/2")
+                self.group.increment_mark(1)
+            else:
             self.logger.info("Not awarding marks for part 2, but still attempitng to mark the rest. This may or may not work....")
         else:
             self.logger.info("Correct!")
@@ -139,11 +144,11 @@ class Prac4Tests(PracTests):
         self.gdb.send_continue()
         if self.part_2_incorrect == True:
             self.logger.info("Attempting to find either the transition: {p0:#x}->{p1:#x} or {p2:#x}->{p3:#x}".format(
-                p0 = 0xFF, p1 = 0x02, p2 = self.part_2_top, p3 = self.part_2_second))
+                p0 = 0x01, p1 = 0xFD, p2 = self.part_2_top, p3 = self.part_2_second))
             try:
-                timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
-                self.part_2_top = 0xFF
-                self.part_2_second = 0x02
+                timing = round(self.ii.timing_transition(0xFD, 0x01), 2)
+                self.part_2_top = 0xFD
+                self.part_2_second = 0x01
             except interrogator_interface.LEDTimingTimeout as e:
                 try:
                     timing = round(self.ii.timing_transition(self.part_2_top, self.part_2_second), 2)
@@ -157,11 +162,11 @@ class Prac4Tests(PracTests):
                     return
         else:
             self.logger.info("Checking timing for pattern transition: {p0:#X}->{p1:#X}".format(
-                p0 = 0xFF, p1 = 0x02))
+                p0 = 0xFD, p1 = 0x01))
             try:
-                timing = round(self.ii.timing_transition(0xFF, 0x02), 2)
-                self.part_2_top = 0xFF
-                self.part_2_second = 0x02
+                timing = round(self.ii.timing_transition(0xFD, 0x01), 2)
+                self.part_2_top = 0xFD
+                self.part_2_second = 0x01
             except interrogator_interface.LEDTimingTimeout as e:
                 p0 = self.ii.read_port(0)
                 time.sleep(1.5)
@@ -300,4 +305,3 @@ class Prac4Tests(PracTests):
             self.logger.info("Submitted after Thursday, 1 mark adjutment")
             self.group.increment_mark(-1)
             self.group.mark = max(self.group.mark, 0)
-        self.logger.info("Final mark: {m}".format(m = self.group.mark))
