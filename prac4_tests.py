@@ -105,7 +105,7 @@ class Prac4Tests(PracTests):
                 act = actual_value))
             if actual_value != expected_value:
                 self.logger.critical("Incorrect.")
-                raise TestFailedError
+                return
             pointer += 4
         self.group.increment_mark(1)
 
@@ -135,7 +135,7 @@ class Prac4Tests(PracTests):
                 self.logger.info("It seems you only got the order the wrong way around. Awarding 1/2")
                 self.group.increment_mark(1)
             else:
-            self.logger.info("Not awarding marks for part 2, but still attempitng to mark the rest. This may or may not work....")
+                self.logger.info("Not awarding marks for part 2, but still attempitng to mark the rest. This may or may not work....")
         else:
             self.logger.info("Correct!")
             self.group.increment_mark(2)
