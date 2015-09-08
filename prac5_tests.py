@@ -5,7 +5,7 @@ from prac_tests import PracTests, TestFailedError, BuildFailedError
 import interrogator_interface
 import gdb_interface
 
-class Prac4Tests(PracTests):
+class Prac5Tests(PracTests):
     def build(self):
         self.clean_marker_directory()
         os.chdir('/home/marker/')
@@ -52,10 +52,6 @@ class Prac4Tests(PracTests):
             self.part_2_tests()
             self.logger.info("----------- PART 3 ----------------")
             self.part_3_tests()
-            self.logger.info("----------- PART 4 ----------------")
-            self.part_4_tests()
-            self.logger.info("----------- PART 5 ----------------")
-            self.part_5_tests()
         except TestFailedError as e:
             self.logger.critical("A test failed. Marking cannot continue")
         except interrogator_interface.LEDTimingTimeout as e:
@@ -67,7 +63,7 @@ class Prac4Tests(PracTests):
         self.logger.info("Checking that the timer is running and generating interrupts")
         tim6_isr_addr = self.gdb.read_word(0x08000000 + 0x84)
         try:
-            self.gdb.run_to_address(tim6_isr_addr)
+            self.gdb.run_to_address(tim6_isr_addr & 0xFFFFFFFE)
         except Exception as e:
             self.logger.exception(e)
             self.logger.critical("TIM6 does not seem to be running. Exiting tests")
@@ -75,34 +71,38 @@ class Prac4Tests(PracTests):
         self.gdb.send_continue()
         time.sleep(0.1)
         self.gdb.send_control_c()
-        first_cnt = self.gdb.word_read(0x40001000 + 0x24)
+        first_cnt = self.gdb.read_word(0x40001000 + 0x24)
         self.gdb.send_continue()
         time.sleep(0.1)
         self.gdb.send_control_c()
-        second_cnt = self.gdb.word_read(0x40001000 + 0x24)
+        second_cnt = self.gdb.read_word(0x40001000 + 0x24)
         if first_cnt == second_cnt:
-            self.logger.critical("TIM6 does not seem to be running. Exiting tests")
+            self.logger.critical("TIM6 does not seem to be running. Leaving test")
             raise TestFailedError
         self.logger.info("TIM6 seems to be running. Now checking timing")
         leds = self.ii.read_port(0)
+        self.gdb.send_continue()
         try:
-            timing = round(self.ii.timing_transition(self.leds+2, self.leds+3), 2)
+            timing = round(self.ii.timing_transition(leds+1, leds+2), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             self.logger.critical("Could not find incrementing transition")
+            return
         self.logger.info("Found transition. Timing should be 1 second. Found to be: {t} second".format(t = timing))
         if (timing > 1*0.95 and timing < 1*1.05):
             self.logger.info("Correct.")
             self.group.increment_mark(2)
         else:
             self.logger.critical("Too far out. Not awarding marks")
+            return
 
     def part_2_tests(self):
         self.ii.clear_pin(0)
         self.logger.info("Asserting SW0")
         time.sleep(3)
         leds = self.ii.read_port(0)
+        time.sleep(1)
         try:
-            timing = round(self.ii.timing_transition(self.leds+2, self.leds+3), 2)
+            timing = round(self.ii.timing_transition(leds+1, leds+2), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             self.logger.critical("Could not find incrementing transition")
         self.logger.info("Found transition. Timing should be 2 second. Found to be: {t} second".format(t = timing))
@@ -111,13 +111,13 @@ class Prac4Tests(PracTests):
             self.group.increment_mark(1)
         else:
             self.logger.critical("Too far out. Not awarding marks")
-            raise TestFailedError
+            return
         self.ii.highz_pin(0)
         self.logger.info("Releasing SW0 to check that timing returns to normal")
         time.sleep(3)
         leds = self.ii.read_port(0)
         try:
-            timing = round(self.ii.timing_transition(leds+2, leds+3), 2)
+            timing = round(self.ii.timing_transition(leds+1, leds+2), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             self.logger.critical("Could not find incrementing transition")
         self.logger.info("Found transition. Timing should be 1 second. Found to be: {t} second".format(t = timing))
@@ -130,13 +130,20 @@ class Prac4Tests(PracTests):
     def part_3_tests(self):
         self.gdb.send_control_c()
         self.gdb.soft_reset()
-        self.gdb.clear_pin(1)
+        self.ii.clear_pin(1)
         self.gdb.send_continue()
         patterns = [0x22, 0x33, 0x44, 0x55, 0xCC, 0xDD, 0xEE, 0xFF]
+        t0 = time.time()
+        while(True):
+            if (self.ii.read_port(0) == 0x22):
+                break
+            if (time.time() - t0 > 10):
+                self.logger.critical("Could not find starting pattern in sequence. Aborting")
+                raise TestFailedError
         for lower_idx in range(1, 12, 2):
-            lower_pattern = patterns[lower_idx % len(patterns)]
-            upper_pattern = patterns[(lower_idx+1) % len(patterns)]
-            self.logger.info("Looking for transition {p0} -> {p1}".format(p0 = lower_pattern, p1 = upper_pattern))
+            p0 = patterns[lower_idx % len(patterns)]
+            p1 = patterns[(lower_idx+1) % len(patterns)]
+            self.logger.info("Looking for transition {p0:#x} -> {p1:#x}".format(p0 = p0, p1 = p1))
             try:
                timing = round(self.ii.timing_transition(p0, p1), 2)
             except interrogator_interface.LEDTimingTimeout as e:
@@ -151,16 +158,24 @@ class Prac4Tests(PracTests):
         self.logger.info("Patterns were cycled though.")
         self.group.increment_mark(1)
         self.logger.info("Now testing that cycle speeds is dependant on SW0")
-        self.gdb.clear_pin(0)
-        self.gdb.clear_pin(1)
+        self.ii.clear_pin(0)
+        self.ii.clear_pin(1)
+        self.logger.info("Asserting both SW0 and SW1")
         self.gdb.send_control_c()
         self.gdb.soft_reset()
         self.gdb.send_continue()
         patterns = [0x22, 0x33, 0x44, 0x55, 0xCC, 0xDD, 0xEE, 0xFF]
+        t0 = time.time()
+        while(True):
+            if (self.ii.read_port(0) == 0x22):
+                break
+            if (time.time() - t0 > 20):
+                self.logger.critical("Could not find starting pattern in sequence. Aborting")
+                raise TestFailedError
         for lower_idx in range(2, 12, 2):
-            lower_pattern = patterns[lower_idx % len(patterns)]
-            upper_pattern = patterns[(lower_idx+1) % len(patterns)]
-            self.logger.info("Looking for transition {p0} -> {p1}".format(p0 = lower_pattern, p1 = upper_pattern))
+            p0 = patterns[lower_idx % len(patterns)]
+            p1 = patterns[(lower_idx+1) % len(patterns)]
+            self.logger.info("Looking for transition {p0:#x} -> {p1:#x}".format(p0 = p0, p1 = p1))
             try:
                timing = round(self.ii.timing_transition(p0, p1), 2)
             except interrogator_interface.LEDTimingTimeout as e:
@@ -172,6 +187,8 @@ class Prac4Tests(PracTests):
             else:
                 self.logger.critical("Incorrect. Exiting tests")
                 raise TestFailedError
+        self.logger.info("Patterns were cycles through at the reduced speed")
+        self.group.increment_mark(1)
         self.logger.info("Now testing that it returns to incrementing when SW1 released")
         self.gdb.send_control_c()
         self.ii.highz_pin(0)

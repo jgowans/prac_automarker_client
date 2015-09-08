@@ -84,6 +84,9 @@ class InterrogatorInterface:
             return cycles/48e6 # running at 48 MHz
 
     def timing_transition(self, pattern0, pattern1):
+        """ Waits for the p0 -> p1 transition to occur and then
+        times how long p1 stays on the LEDs
+        """
         pattern0 = pattern0 & 0xFF
         pattern1 = pattern1 & 0xFF
         self.ser.flushInput()

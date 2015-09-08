@@ -123,7 +123,7 @@ class GDBInterface:
 
     def read_word(self, address):
         self.gdb.sendline("x/1wx {a:#x}".format(a = address))
-        self.gdb.expect_exact("{0:#x}:".format(address))
+        self.gdb.expect("{0:#x}\s?\S*:".format(address))
         self.gdb.expect_exact("(gdb)")
         return int(self.gdb.before.strip(), 16)
 
