@@ -81,13 +81,7 @@ class GDBInterface:
         self.gdb.sendcontrol('c')
         self.gdb.expect_exact("(gdb)")
 
-    def run_to_label(self, label):
-        try:
-            address = elf_parser.get_address_of_label(self.elf_file, label) # this will throw an exception if label not found
-            self.logger.info("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
-        except:
-            self.logger.critical("Could not find label: {l}".format(l = label))
-            raise LabelNotFound
+    def run_to_address(self, address):
         self.logger.debug("break *{a:#X}".format(a = address))
         self.gdb.sendline("break *{a:#x}".format(a = address))
         try:
@@ -99,7 +93,17 @@ class GDBInterface:
         except Exception as e:
             self.logger.critical("Breakpoint not hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
+            self.delete_all_breakpoints()
             raise BreakpointNotHit
+
+    def run_to_label(self, label):
+        try:
+            address = elf_parser.get_address_of_label(self.elf_file, label) # this will throw an exception if label not found
+            self.logger.info("Attempting to run to label {l} with address {a:#X}".format(l = label, a = address))
+        except:
+            self.logger.critical("Could not find label: {l}".format(l = label))
+            raise LabelNotFound
+        self.run_to_address(address)
 
     def run_to_function(self, f_name):
         self.logger.info("Attempting to run to label {l}".format(l = f_name))

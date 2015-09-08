@@ -33,7 +33,6 @@ class Group:
         makefiles = [fi for fi in all_files if fi.endswith("akefile")]
         self.files += makefiles
 
-
     def increment_mark(self, val):
         self.mark += val
         self.logger.info("Mark set to {m}".format(m = self.mark))
