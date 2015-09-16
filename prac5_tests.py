@@ -18,9 +18,12 @@ class Prac5Tests(PracTests):
             self.logger.critical("Too many or too few .s files found. Should be only 1 .s file. Actual directory contents: {af}".format(af = all_files))
             raise BuildFailedError
         self.logger.info("Found only 1 .s file. Good!")
-        cmd = "sed -i \"s/.word 0xBBAA5500/.word 0x55443322/g\" {f}".format(f = s_files[0])
+        cmd = "sed -i \"s/.word 0xBBAA5500/.word 0x55443366/g\" {f}".format(f = s_files[0])
         self.exec_as_marker(cmd)
-        self.logger.info("Your source file has been modified to replace .word 0xBBAA5500 with .word 0x55443322")
+        self.logger.info("Your source file has been modified to replace .word 0xBBAA5500 with .word 0x55443366")
+        cmd = "sed -i \"s/.word 0xFFEEDDCC/.word 0x8877DDCC/g\" {f}".format(f = s_files[0])
+        self.exec_as_marker(cmd)
+        self.logger.info("Your source file has been modified to replace .word 0xFFEEDDCC with .word 0x8877DDCC")
         self.logger.info("Running 'make' in submission directory")
         try:
             self.exec_as_marker("make")
@@ -105,6 +108,7 @@ class Prac5Tests(PracTests):
             timing = round(self.ii.timing_transition(leds+1, leds+2), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             self.logger.critical("Could not find incrementing transition")
+            return
         self.logger.info("Found transition. Timing should be 2 second. Found to be: {t} second".format(t = timing))
         if (timing > 2*0.95 and timing < 2*1.05):
             self.logger.info("Correct.")
@@ -120,6 +124,7 @@ class Prac5Tests(PracTests):
             timing = round(self.ii.timing_transition(leds+1, leds+2), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             self.logger.critical("Could not find incrementing transition")
+            return
         self.logger.info("Found transition. Timing should be 1 second. Found to be: {t} second".format(t = timing))
         if (timing > 1*0.95 and timing < 1*1.05):
             self.logger.info("Correct.")
@@ -132,10 +137,10 @@ class Prac5Tests(PracTests):
         self.gdb.soft_reset()
         self.ii.clear_pin(1)
         self.gdb.send_continue()
-        patterns = [0x22, 0x33, 0x44, 0x55, 0xCC, 0xDD, 0xEE, 0xFF]
+        patterns = [0x66, 0x33, 0x44, 0x55, 0xCC, 0xDD, 0x77, 0x88]
         t0 = time.time()
         while(True):
-            if (self.ii.read_port(0) == 0x22):
+            if (self.ii.read_port(0) == patterns[0]):
                 break
             if (time.time() - t0 > 10):
                 self.logger.critical("Could not find starting pattern in sequence. Aborting")
@@ -164,10 +169,10 @@ class Prac5Tests(PracTests):
         self.gdb.send_control_c()
         self.gdb.soft_reset()
         self.gdb.send_continue()
-        patterns = [0x22, 0x33, 0x44, 0x55, 0xCC, 0xDD, 0xEE, 0xFF]
+        patterns = [0x66, 0x33, 0x44, 0x55, 0xCC, 0xDD, 0x77, 0x88]
         t0 = time.time()
         while(True):
-            if (self.ii.read_port(0) == 0x22):
+            if (self.ii.read_port(0) == patterns[0]):
                 break
             if (time.time() - t0 > 20):
                 self.logger.critical("Could not find starting pattern in sequence. Aborting")
