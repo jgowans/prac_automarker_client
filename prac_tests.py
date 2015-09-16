@@ -14,9 +14,9 @@ class BuildFailedError(PracFailedError):
     pass
 
 class PracTests:
-    def __init__(self, group, logger):
+    def __init__(self, student, logger):
         self.logger = logger
-        self.group = group
+        self.student.student
 
     def run_tests(self):
         self.ii = InterrogatorInterface()
@@ -41,6 +41,9 @@ class PracTests:
             raise BuildFailedError
         if return_code != 0:
             self.logger.critical("Non-zero return code received")
+            error_message = make_proc.communicate()
+            self.logger.critical(error_message[0].decode())
+            self.logger.critical(error_message[1].decode())
             raise BuildFailedError
 
     def clean_marker_directory(self):

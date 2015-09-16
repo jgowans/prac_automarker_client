@@ -4,12 +4,13 @@ import os
 import logging
 import time
 import csv
-import group_manager
+#import group_manager
+import individual_manager
 from prac_tests import BuildFailedError
-from group import GroupSourceFileProblem
+#from group import GroupSourceFileProblem
 from prac5_tests import Prac5Tests
 
-PRACNUMBER = 5
+PRACNUMBER = None
 
 logger = logging.getLogger()
 logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
@@ -23,35 +24,35 @@ console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 logger.addHandler(console_handler)
 
-BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
+#BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
+BASE_DIR = "/tmp/Practical Exam 0"
 COMMON_DIR = "/tmp/common_dir_{t}".format(t = time.strftime("%Y_%m_%d_%H_%M_%S"))
 os.mkdir(COMMON_DIR)
 logger.info("Automarker beginning execution")
 
-groupman = group_manager.GroupManager(BASE_DIR)
-for group in groupman:
-    group.find_group_dir(BASE_DIR)
-    logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + group.members + ':' + logging.BASIC_FORMAT))
-    console_handler.setFormatter(logging.Formatter("%(asctime)s:" + group.members + ':' + logging.BASIC_FORMAT))
-    logger.info("====Starting to deal with group: {g}====".format(g=group.members))
-    group_comment_logger = logging.FileHandler("{d}/comments.txt".format(d = group.group_directory), 'w')
-    group_comment_logger.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s<br>'))
-    group_comment_logger.setLevel(logging.INFO)
-    logger.addHandler(group_comment_logger)
+indivman = individual_manager.IndividualManager(BASE_DIR)
+for student in indivman
+    student.(BASE_DIR)
+    logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + student.user_id + ':' + logging.BASIC_FORMAT))
+    console_handler.setFormatter(logging.Formatter("%(asctime)s:" + student.user_id + ':' + logging.BASIC_FORMAT))
+    logger.info("====Starting to deal with student: {uid}====".format(uid = student.user_id))
+    comment_logger = logging.FileHandler("{d}/comments.txt".format(d = student.directory), 'w')
+    comment_logger.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s<br>'))
+    comment_logger.setLevel(logging.INFO)
+    logger.addHandler(comment_logger)
     try:
-        group.find_group_files()
-        group.get_submissiontime()
+        student.catalogue_submission_files()
         #group.prepend_stdnums()
         #group.copy_source_to_common_dir(COMMON_DIR)
-        tester =  Prac5Tests(group, logger.getChild('prac{n}'.format(n = PRACNUMBER)))
+        tester =  PracExam0Tests(student, logger.getChild('pt0'))
         tester.build()
         tester.run_tests()
     except BuildFailedError as e:
         logger.critical("Build Failed. Exiting")
     finally:
-        group_comment_logger.close()
-        logger.removeHandler(group_comment_logger)
-        logger.debug("Closed and removed group handler")
+        comment_logger.close()
+        logger.removeHandler(comment_logger)
+        logger.debug("Closed and removed comment_logger handler")
 
 logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
