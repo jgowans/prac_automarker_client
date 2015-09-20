@@ -76,6 +76,11 @@ class GDBInterface:
         self.gdb.expect_exact("Continuing.")
         self.logger.info("Code now running.")
 
+    def get_backtrace(self):
+        self.gdb.sendline("backtrace")
+        self.gdb.expect_exact("(gdb)")
+        return self.gdb.before.strip()
+
     def send_control_c(self):
         self.logger.info("Sending Ctrl+C")
         self.gdb.sendcontrol('c')
@@ -87,13 +92,15 @@ class GDBInterface:
         try:
             self.gdb.expect_exact("(gdb)")
             self.gdb.sendline("continue")
-            self.gdb.expect("Breakpoint.*\(gdb\)")
+            self.gdb.expect("Breakpoint([\s\S])*\(gdb\)")
             self.logger.debug("Hit breakpoint")
             self.delete_all_breakpoints()
         except Exception as e:
+            print(e)
             self.logger.critical("Breakpoint not hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
             self.delete_all_breakpoints()
+            self.logger.critical("Backtrace:\n" + self.get_backtrace().decode())
             raise BreakpointNotHit
 
     def run_to_label(self, label):

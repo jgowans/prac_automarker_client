@@ -16,7 +16,7 @@ class BuildFailedError(PracFailedError):
 class PracTests:
     def __init__(self, student, logger):
         self.logger = logger
-        self.student.student
+        self.student = student
 
     def run_tests(self):
         self.ii = InterrogatorInterface()
@@ -41,7 +41,7 @@ class PracTests:
             raise BuildFailedError
         if return_code != 0:
             self.logger.critical("Non-zero return code received")
-            error_message = make_proc.communicate()
+            error_message = proc.communicate()
             self.logger.critical(error_message[0].decode())
             self.logger.critical(error_message[1].decode())
             raise BuildFailedError

@@ -8,7 +8,7 @@ import csv
 import individual_manager
 from prac_tests import BuildFailedError
 #from group import GroupSourceFileProblem
-from prac5_tests import Prac5Tests
+from prac_exam_0_tests import PracExam0Tests
 
 PRACNUMBER = None
 
@@ -31,8 +31,8 @@ os.mkdir(COMMON_DIR)
 logger.info("Automarker beginning execution")
 
 indivman = individual_manager.IndividualManager(BASE_DIR)
-for student in indivman
-    student.(BASE_DIR)
+for student in indivman:
+    student.find_directories(BASE_DIR)
     logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + student.user_id + ':' + logging.BASIC_FORMAT))
     console_handler.setFormatter(logging.Formatter("%(asctime)s:" + student.user_id + ':' + logging.BASIC_FORMAT))
     logger.info("====Starting to deal with student: {uid}====".format(uid = student.user_id))
@@ -57,5 +57,5 @@ for student in indivman
 logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 logger.info("Generating marks file")
-groupman.generate_marks_file("/tmp/Practical{p}/grades.csv".format(p = PRACNUMBER), \
-        "/tmp/Practical{p}/grades_new.csv".format(p = PRACNUMBER))
+indivman.generate_marks_file("/tmp/Practical Exam 0/grades.csv", \
+        "/tmp/Practical Exam 0/grades_new.csv")

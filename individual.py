@@ -8,11 +8,11 @@ class NoDirectoryForIndividual(Exception):
     pass
 class IndividualSourceFileProblem(Exception):
     pass
-class NoSourceFileFound(GroupSourceFileProblem):
+class NoSourceFileFound(IndividualSourceFileProblem):
     pass
-class MultipleSourceFilesFound(GroupSourceFileProblem):
+class MultipleSourceFilesFound(IndividualSourceFileProblem):
     pass
-class IncorrectNumberOfZipsFound(GroupSourceFileProblem):
+class IncorrectNumberOfZipsFound(IndividualSourceFileProblem):
     pass
 
 class Individual:

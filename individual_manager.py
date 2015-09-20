@@ -23,7 +23,7 @@ class IndividualManager:
             for gradeline in gradesfile_reader:
                 if (len(gradeline) == 5) and (gradeline[0] != 'Display ID'): # Valid grade line
                     user_id = gradeline[1]
-                    self.groups.append(Individual(user_id
+                    self.individuals.append(Individual(user_id,
                                              self.logger.getChild("individual_{uid}".format(uid=user_id))))
 
     def __iter__(self):
@@ -44,8 +44,8 @@ class IndividualManager:
                 rows.append(row)
         for individual in self:
             for row_to_check in rows:
-                if (len(row_to_check) == 4) and (individual.user_id == row_to_check[1]):
-                        row_to_check[3] = individual.mark
+                if (len(row_to_check) == 5) and (individual.user_id == row_to_check[1]):
+                        row_to_check[4] = individual.mark
                         break  # the mark has been assigned - get out of inner loop
         with open(csv_new, 'w') as fi:
             new_writer = csv.writer(fi)
