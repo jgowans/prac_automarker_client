@@ -198,3 +198,8 @@ class GDBInterface:
         self.gdb.sendline("finish")
         self.gdb.expect_exact("Run till exit from")
         self.gdb.expect_exact("(gdb)")
+
+    def verify(self):
+        self.gdb.sendline("compare-sections")
+        if (self.gdb.expect_exact(["MIS-MATCHED!", "(gdb)"]) == 0):
+            raise Exception

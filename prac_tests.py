@@ -12,11 +12,13 @@ class TestFailedError(PracFailedError):
     pass
 class BuildFailedError(PracFailedError):
     pass
+class SourceFileProblem(PracFailedError):
+    pass
 
 class PracTests:
-    def __init__(self, student, logger):
+    def __init__(self, submitter, logger):
         self.logger = logger
-        self.student = student
+        self.submitter = submitter
 
     def run_tests(self):
         self.ii = InterrogatorInterface()
@@ -53,5 +55,8 @@ class PracTests:
         raise NotImplementedError
     
     def run_specific_prac_tests(self):
+        raise NotImplementedError
+
+    def catalogue_submission_files(self):
         raise NotImplementedError
 
