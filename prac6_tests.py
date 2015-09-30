@@ -16,8 +16,12 @@ class Prac6Tests(PracTests):
             self.logger.critical("Too many or not enough zip files found out of: {a}. Aborting.".format(a = all_files))
             raise SourceFileProblem
         self.logger.info("Extracting zipfile: {z}".format(z = zip_files[0]))
-        with zipfile.ZipFile(zip_files[0]) as z:
-            z.extractall()
+        try:
+            with zipfile.ZipFile(zip_files[0]) as z:
+                    z.extractall()
+        except zipfile.BadZipFile as e:
+            self.logger.critical(str(e))
+            raise BuildFailedError
         all_files = os.listdir()
         self.logger.info("After unzip, directory contains: {f}".format(f = all_files))
         self.submitter.makefiles = [f for f in all_files if f.lower() == 'makefile']
@@ -69,9 +73,17 @@ class Prac6Tests(PracTests):
     def run_specific_prac_tests(self):
         self.gdb.open_file(self.elf_file)
         self.gdb.connect()
+        self.gdb.soft_reset()
         self.gdb.erase()
-        self.gdb.load()
-        self.gdb.verify()
+        self.gdb.soft_reset()
+        try:
+            self.gdb.load()
+        except gdb_interface.CodeLoadFailed as e:
+            return
+        try:
+            self.gdb.verify()
+        except gdb_interface.CodeVerifyFailed as e:
+            return
         self.ii.highz_pin(0)
         self.ii.highz_pin(1)
         self.ii.highz_pin(2)

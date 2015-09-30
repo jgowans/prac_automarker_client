@@ -8,23 +8,30 @@ class BreakpointNotHit(GDBException):
     pass
 class LabelNotFound(GDBException):
     pass
+class CodeVerifyFailed(GDBException):
+    pass
+class CodeLoadFailed(GDBException):
+    pass
 
 class GDBInterface:
     def __init__(self, logger):
         self.logger = logger
-        self.gdb = pexpect.spawn("arm-none-eabi-gdb", timeout=10)
+        self.logfile = open('/tmp/automarker_gdb.log', 'a')
+        self.gdb = pexpect.spawnu("arm-none-eabi-gdb", timeout=10, logfile=self.logfile)
         self.gdb.expect_exact("(gdb)")
         # disables the "Type <return> to continue, or q <return> to quit"
         self.gdb.sendline("set pagination off")
         self.gdb.expect_exact("(gdb)")
-        self.gdb.sendline("set logging file /tmp/automarker_gdb.log")
-        self.gdb.expect_exact("(gdb)")
-        self.gdb.sendline("set logging on")
-        self.gdb.expect_exact("Copying output to")
-        self.gdb.expect_exact("(gdb)")
+        #self.gdb.sendline("set logging file /tmp/automarker_gdb.log")
+        #self.gdb.expect_exact("(gdb)")
+        #self.gdb.sendline("set logging on")
+        #self.gdb.expect_exact("Copying output to")
+        #self.gdb.expect_exact("(gdb)")
 
     def terminate(self):
         self.gdb.terminate()
+        self.logfile.close()
+        self.logger.debug("GDB terminated gracefully")
 
     def __enter__(self):
         return self
@@ -52,7 +59,7 @@ class GDBInterface:
     def send_raw_command(self, cmd):
         self.gdb.sendline(cmd)
         self.gdb.expect_exact("(gdb)")
-        return self.gdb.before.decode()
+        return self.gdb.before
 
     def soft_reset(self):
         self.logger.debug("Attempting soft reset.")
@@ -61,13 +68,16 @@ class GDBInterface:
         self.logger.debug("Soft reset complete.")
 
     def erase(self):
-        self.gdb.sendline("monitor flash erase_sector 0 0 0")
-        self.gdb.expect("erased sectors 0 through 0 on flash bank 0 in.*\(gdb\)")
+        self.gdb.sendline("monitor flash erase_sector 0 0 last")
+        self.gdb.expect("erased sectors 0 through 31 on flash bank 0 in.*\(gdb\)")
         self.logger.debug("Microcontroller flash memory erased")
 
     def load(self):
         self.gdb.sendline("load")
-        self.gdb.expect("Transfer rate.*\(gdb\)")
+        if self.gdb.expect(["Transfer rate.*\(gdb\)", "Load failed\r\n\(gdb\)"]) != 0:
+            self.logger.critical("'load' failed. This could be my fault or yours. Please check")
+            self.logger.critical("{b} {a}".format(b = self.gdb.before, a = self.gdb.after))
+            raise CodeLoadFailed
         self.logger.info(".elf file loaded into flash")
 
     def send_continue(self):
@@ -100,7 +110,7 @@ class GDBInterface:
             self.logger.critical("Breakpoint not hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
             self.delete_all_breakpoints()
-            self.logger.critical("Backtrace:\n" + self.get_backtrace().decode())
+            self.logger.critical("Backtrace:\n" + self.get_backtrace())
             raise BreakpointNotHit
 
     def run_to_label(self, label):
@@ -150,7 +160,7 @@ class GDBInterface:
         self.gdb.sendline("info functions ^{f}$".format(f=f_name))
         self.gdb.expect_exact("All functions matching regular expression")
         self.gdb.expect_exact("(gdb)")
-        raw_functions = self.gdb.before.strip().decode()
+        raw_functions = self.gdb.before.strip()
         raw_functions_lines = raw_functions.split('\n')
         functions = []
         function_re = re.compile(".*\(.*\);")
@@ -162,7 +172,7 @@ class GDBInterface:
     def get_all_global_variables(self):
         self.gdb.sendline("info variables")
         self.gdb.expect("(gdb)")
-        all_vars = self.gdb.before.decode().split("\n")
+        all_vars = self.gdb.before.split("\n")
         all_vars = [v.strip() for v in all_vars]
         all_defined_idx = all_vars.index("All defined variables:")
         non_debugging_idx = all_vars.index("Non-debugging symbols:")
@@ -176,7 +186,7 @@ class GDBInterface:
         var_string = "whatis {v}".format(v = var)
         self.gdb.sendline(var_string)
         self.gdb.expect("type = .*") # expecting something like: $6 = 0x7b
-        value = self.gdb.after.decode().split('=')[1].strip() # should get the '0x7b' of the above
+        value = self.gdb.after.split('=')[1].strip() # should get the '0x7b' of the above
         self.gdb.expect_exact("(gdb)")
         return value
 
@@ -185,7 +195,7 @@ class GDBInterface:
         self.gdb.sendline(var_string)
         if self.gdb.expect(["\$.* = .*\n", "No symbol .* in current context"]) != 0: # expecting something like: $6 = 0x7b
             raise Exception("Symbol not found")
-        value = self.gdb.after.decode().split('=')[1].strip() # should get the '0x7b' of the above
+        value = self.gdb.after.split('=')[1].strip() # should get the '0x7b' of the above
         self.gdb.expect_exact("(gdb)")
         return int(value, 16)
 
@@ -201,5 +211,8 @@ class GDBInterface:
 
     def verify(self):
         self.gdb.sendline("compare-sections")
-        if (self.gdb.expect_exact(["MIS-MATCHED!", "(gdb)"]) == 0):
-            raise Exception
+        if (self.gdb.expect_exact(["MIS-MATCHED!", "matched.\r\n(gdb)"]) == 0):
+            self.logger.critical("The program code in flash did not match the contents of the .elf when verifying. \
+                                 This could be a problem with my marker or with your elf... Please check")
+            raise CodeVerifyFailed
+

@@ -9,8 +9,8 @@ class PracExam0Tests(PracTests):
     def build(self):
         self.clean_marker_directory()
         os.chdir('/home/marker/')
-        for f in self.student.files:
-            escaped_dir = self.student.submission_directory.replace("'", "\\'")
+        for f in self.submitter.files:
+            escaped_dir = self.submitter.submission_directory.replace("'", "\\'")
             cmd = "cp \"{d}/{f}\" /home/marker/".format(d = escaped_dir, f = f)
             self.exec_as_marker(cmd)
         all_files = os.listdir()
@@ -77,7 +77,7 @@ class PracExam0Tests(PracTests):
                 self.logger.critical("Wrong.")
                 return
         self.logger.info("All correct.")
-        self.student.increment_mark(2)
+        self.submitter.increment_mark(2)
 
     def part_2_tests(self):
         self.logger.info("Checking case for largest element not the last element")
@@ -88,7 +88,7 @@ class PracExam0Tests(PracTests):
         if leds != 0xef:
             self.logger.critical("Wrong")
             return
-        self.student.increment_mark(2)
+        self.submitter.increment_mark(2)
         self.logger.info("Now trying case where best element is the last one")
         self.gdb.soft_reset()
         self.gdb.run_to_label('copy_to_RAM_complete')
@@ -101,7 +101,7 @@ class PracExam0Tests(PracTests):
         if leds != 0xf4:
             self.logger.critical("Wrong")
             return
-        self.student.increment_mark(1)
+        self.submitter.increment_mark(1)
 
 
     def part_3_tests(self):
@@ -135,7 +135,7 @@ class PracExam0Tests(PracTests):
         self.logger.info("Found transition. Timing should be 1.5 second. Found to be: {t} second".format(t = timing))
         if (timing > 1.5*0.95 and timing < 1.5*1.05):
             self.logger.info("Correct.")
-            self.student.increment_mark(1)
+            self.submitter.increment_mark(1)
         else:
             self.logger.critical("Too far out. Not awarding marks")
             return
@@ -164,7 +164,7 @@ class PracExam0Tests(PracTests):
         self.logger.info("After 0xF8, LEDs went to: {leds:#x}".format(leds = leds))
         if leds in [0xF4, 0xEF]:
             self.logger.info("Correct")
-            self.student.increment_mark(2)
+            self.submitter.increment_mark(2)
         else:
             self.logger.critical("Wrong")
 
@@ -193,7 +193,7 @@ class PracExam0Tests(PracTests):
             self.logger.critical("Could not find incrementing transition")
             return
         self.logger.info("Found transition. Found to be: {t} second".format(t = timing))
-        self.student.increment_mark(1)
+        self.submitter.increment_mark(1)
 
     def part_6_tests(self):
         leds_backup = self.ii.read_port(0)
@@ -229,4 +229,4 @@ class PracExam0Tests(PracTests):
         if (leds_backup != leds_new):
             self.logger.critical("Wrong")
             return
-        self.student.increment_mark(1)
+        self.submitter.increment_mark(1)
