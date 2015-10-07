@@ -8,6 +8,8 @@ class BreakpointNotHit(GDBException):
     pass
 class LabelNotFound(GDBException):
     pass
+class SymbolNotFound(GDBException):
+    pass
 class CodeVerifyFailed(GDBException):
     pass
 class CodeLoadFailed(GDBException):
@@ -136,7 +138,8 @@ class GDBInterface:
         except:
             self.logger.critical("Breakpoint never hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
-            return False
+            self.logger.critical("Backtrace:\n" + self.get_backtrace())
+            raise BreakpointNotHit
 
     def read_word(self, address):
         self.gdb.sendline("x/1wx {a:#x}".format(a = address))
@@ -194,7 +197,7 @@ class GDBInterface:
         var_string = "print/x {v}".format(v = var)
         self.gdb.sendline(var_string)
         if self.gdb.expect(["\$.* = .*\n", "No symbol .* in current context"]) != 0: # expecting something like: $6 = 0x7b
-            raise Exception("Symbol not found")
+            raise SymbolNotFound
         value = self.gdb.after.split('=')[1].strip() # should get the '0x7b' of the above
         self.gdb.expect_exact("(gdb)")
         return int(value, 16)
@@ -205,9 +208,15 @@ class GDBInterface:
         self.gdb.expect_exact("(gdb)")
 
     def send_finish(self):
-        self.gdb.sendline("finish")
-        self.gdb.expect_exact("Run till exit from")
-        self.gdb.expect_exact("(gdb)")
+        try:
+            self.gdb.sendline("finish")
+            self.gdb.expect_exact("Run till exit from")
+            self.gdb.expect_exact("(gdb)")
+        except:
+            self.logger.info("Function never returned. May have hard faulted or stuck in a loop?")
+            self.send_control_c()
+            self.logger.critical("Backtrace:\n" + self.get_backtrace())
+            raise BreakpointNotHit
 
     def verify(self):
         self.gdb.sendline("compare-sections")
