@@ -107,6 +107,12 @@ class Prac7Tests(PracTests):
             self.logger.critical("LEDs timing checker timed out before finding expected patterns")
         except gdb_interface.GDBException as e:
             self.logger.critical("Your program did not respond the way GDB expected it to")
+        self.ii.highz_pin(0)
+        self.ii.highz_pin(1)
+        self.ii.highz_pin(2)
+        self.ii.highz_pin(3)
+        self.ii.write_dac(0, 0)
+        self.ii.write_dac(1, 0)
 
     def part_1_tests(self):
         self.gdb.send_continue()

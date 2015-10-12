@@ -1,35 +1,51 @@
 import elf_parser
 import time, os
 import subprocess
-from prac_tests import PracTests, TestFailedError, BuildFailedError
+from prac_tests import PracTests, TestFailedError, BuildFailedError, SourceFileProblem
 import interrogator_interface
 import gdb_interface
 
 class Prac3Tests(PracTests):
+
+    def catalogue_submission_files(self):
+        os.chdir(self.submitter.submission_directory)
+        all_files = os.listdir()
+        self.logger.info("Directory contains: {f}".format(f = all_files))
+        self.submitter.sfiles = [f for f in all_files if f.endswith(".s")]
+        if len(self.submitter.sfiles) != 1:
+            self.logger.critical("Too many or too few assembly files submitted")
+            raise SourceFileProblem
+        self.submitter.files_to_mark = \
+            self.submitter.sfiles
+        self.logger.info("Selected for marking: {f}".format(f = self.submitter.files_to_mark))
+        self.submitter.files_for_plag_check = \
+            self.submitter.sfiles
+
     def build(self):
-        os.chdir(self.group.submission_directory)
+        os.chdir(self.submitter.submission_directory)
+        self.clean_marker_directory()
+        os.chdir('/home/marker/')
+        for f in self.submitter.files_to_mark:
+            cmd = "cp \"{d}/{f}\" /home/marker/".format(d = self.submitter.submission_directory, f = f)
+            self.exec_as_marker(cmd)
+        self.logger.info("Running assembler in submission directory")
         try:
-            assembler_cmdline = ['arm-none-eabi-as',
-                                 '-g',
-                                 '-mthumb', 
-                                 '-mcpu=cortex-m0',
-                                 '-o', 'main.o',
-                                 '{s}'.format(s = self.group.src_file)]
-            subprocess.check_output(
-                assembler_cmdline, 
-                stderr=subprocess.STDOUT)
-            self.logger.info("Assembler ran successfully")
-            linker_cmdline = ['arm-none-eabi-ld',
-                              '-Ttext=0x08000000',
-                              '-o', 'main.elf',
-                              'main.o']
-            subprocess.check_output(
-                linker_cmdline, 
-                stderr=subprocess.STDOUT)
-            self.logger.info("Linker process ran successfully")
-        except subprocess.CalledProcessError as e:
-            self.logger.info("Received build error: \n{err}".format(err = e.output))
+            self.exec_as_marker("arm-none-eabi-as -g -mthumb -mcpu=cortex-m0 -o main.o {s}".format(s = self.submitter.sfiles[0]))
+        except BuildFailedError as e:
+            self.logger.info("Received build error. Aborting")
             raise BuildFailedError
+        self.logger.info("Running linker in submission directory")
+        try:
+            self.exec_as_marker("arm-none-eabi-ld -Ttext=0x08000000 -o main.elf main.o")
+        except BuildFailedError as e:
+            self.logger.info("Received build error. Aborting")
+            raise BuildFailedError
+        all_files = os.listdir()
+        elf_files = [fi for fi in all_files if fi.endswith(".elf")]
+        if len(elf_files) != 1:
+            self.logger.critical("Too few or too many elf files found after make. Directory contents: {af}".format(af = all_files))
+            raise BuildFailedError
+        self.elf_file = elf_files[0]
 
     def run_specific_prac_tests(self):
         self.gdb.open_file('main.elf')
@@ -40,7 +56,7 @@ class Prac3Tests(PracTests):
         self.ii.highz_pin(1)
         self.ii.highz_pin(2)
         self.ii.highz_pin(3)
-        self.ii.write_dac(0)
+        self.ii.write_dac(0, 0)
         try:
             self.logger.info("----------- PART 1 ----------------")
             self.part_1_tests()
@@ -84,7 +100,7 @@ class Prac3Tests(PracTests):
                 self.logger.critical("Incorrect.")
                 raise TestFailedError
             pointer += 4
-        self.group.increment_mark(2)
+        self.submitter.increment_mark(2)
         self.logger.info("Changing address 0x20001FE0 to value 0x0000009A")
         self.gdb.write_word(0x20001FE0, 0x0000009A)
         self.logger.info("The closest pair should now be 0x99 and 0x9A")
@@ -107,7 +123,7 @@ class Prac3Tests(PracTests):
                 p0 = p0, p1 = p1))
             return
         self.logger.info("Found transition: part2 must be correct for a value not at the end of the stack.")
-        self.group.increment_mark(1)
+        self.submitter.increment_mark(1)
         self.logger.info("Now checking if it works if the best pair is the last pair")
         self.gdb.send_control_c()
         self.gdb.soft_reset()
@@ -120,7 +136,7 @@ class Prac3Tests(PracTests):
         try:
             timing = round(self.ii.timing_transition(0xF2, 0xF4))
             self.logger.info("Found pattern. Part 2 must be correct even for end of stack edge case")
-            self.group.increment_mark(1)
+            self.submitter.increment_mark(1)
         except interrogator_interface.LEDTimingTimeout as e:
             p0 = self.ii.read_port(0)
             time.sleep(1)
@@ -146,7 +162,7 @@ class Prac3Tests(PracTests):
         self.logger.info("Timing should be 1 second. Found to be {t} seconds.".format(t=timing))
         if (timing >= 0.95) and (timing <= 1.05):
             self.logger.info("Correct")
-            self.group.increment_mark(1)
+            self.submitter.increment_mark(1)
         else:
             self.logger.critical("Too far out. Exiting tests")
             raise TestFailedError
@@ -158,7 +174,7 @@ class Prac3Tests(PracTests):
         self.logger.info("Holding SW0")
         self.ii.clear_pin(0)
         time.sleep(2)
-        self.ii.write_dac(0)
+        self.ii.write_dac(0, 0)
         time.sleep(0.5)
         leds = self.ii.read_port(0)
         self.logger.info("Pot set to 0V, expecting 0 on LEDs")
@@ -166,7 +182,7 @@ class Prac3Tests(PracTests):
         if (leds > 5):
             self.logger.critical("Too far out")
             raise TestFailedError
-        self.ii.write_dac(0x30)
+        self.ii.write_dac(0, 0x30)
         time.sleep(0.5)
         leds = self.ii.read_port(0)
         self.logger.info("Pot set to 0.62V, expecting 0x30 on LEDs")
@@ -174,7 +190,7 @@ class Prac3Tests(PracTests):
         if (leds > 0x35) or (leds < 0x25):
             self.logger.critical("Too far out")
             raise TestFailedError
-        self.ii.write_dac(0xDD)
+        self.ii.write_dac(0, 0xDD)
         time.sleep(0.5)
         leds = self.ii.read_port(0)
         self.logger.info("Pot set to 2.86V, expecting 0xDD on LEDs")
@@ -182,4 +198,4 @@ class Prac3Tests(PracTests):
         if (leds > 0xE4) or (leds < 0xD5):
             self.logger.critical("Too far out")
             raise TestFailedError
-        self.group.increment_mark(2)
+        self.submitter.increment_mark(2)
