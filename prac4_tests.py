@@ -6,11 +6,31 @@ import interrogator_interface
 import gdb_interface
 
 class Prac4Tests(PracTests):
+    def catalogue_submission_files(self):
+        os.chdir(self.submitter.submission_directory)
+        all_files = os.listdir()
+        self.logger.info("Directory contains: {f}".format(f = all_files))
+        self.submitter.makefiles = [f for f in all_files if f.lower() == 'makefile']
+        if len(self.submitter.makefiles) != 1:
+            self.logger.critical("Too few or too many makefiles submitted")
+            raise SourceFileProblem
+        self.submitter.sfiles = [f for f in all_files if f.endswith(".s")]
+        if len(self.submitter.sfiles) != 1:
+            self.logger.critical("Too many or too few assembly files submitted")
+            raise SourceFileProblem
+        self.submitter.files_to_mark = \
+            self.submitter.makefiles + \
+            self.submitter.sfiles
+        self.logger.info("Selected for marking: {f}".format(f = self.submitter.files_to_mark))
+        self.submitter.files_for_plag_check = \
+            self.submitter.makefiles + \
+            self.submitter.sfiles
+
     def build(self):
         self.clean_marker_directory()
         os.chdir('/home/marker/')
-        for f in self.group.files:
-            cmd = "cp \"{d}/{f}\" /home/marker/".format(d = self.group.submission_directory, f = f)
+        for f in self.submitter.files_to_mark:
+            cmd = "cp \"{d}/{f}\" /home/marker/".format(d = self.submitter.submission_directory, f = f)
             self.exec_as_marker(cmd)
         all_files = os.listdir()
         s_files = [fi for fi in all_files if fi.endswith(".s")]
@@ -107,7 +127,7 @@ class Prac4Tests(PracTests):
                 self.logger.critical("Incorrect.")
                 return
             pointer += 4
-        self.group.increment_mark(1)
+        self.submitter.increment_mark(1)
 
     def part_2_tests(self):
         self.part_2_incorrect = False
@@ -133,12 +153,12 @@ class Prac4Tests(PracTests):
         if self.part_2_incorrect == True:
             if (self.part_2_top == 0xFFFFFFFD or self.part_2_top == 0xFD) and (self.part_2_second == 0x01):
                 self.logger.info("It seems you only got the order the wrong way around. Awarding 1/2")
-                self.group.increment_mark(1)
+                self.submitter.increment_mark(1)
             else:
                 self.logger.info("Not awarding marks for part 2, but still attempitng to mark the rest. This may or may not work....")
         else:
             self.logger.info("Correct!")
-            self.group.increment_mark(2)
+            self.submitter.increment_mark(2)
 
     def part_3_tests(self):
         self.gdb.send_continue()
@@ -178,7 +198,7 @@ class Prac4Tests(PracTests):
         self.logger.info("Timing should be 1.5 seconds. Found to be {t} seconds.".format(t=timing))
         if (timing >= 1.5*0.95) and (timing <= 1.5*1.05):
             self.logger.info("Correct")
-            self.group.increment_mark(1)
+            self.submitter.increment_mark(1)
         else:
             self.logger.critical("Too far out. Exiting tests")
             raise TestFailedError
@@ -227,7 +247,7 @@ class Prac4Tests(PracTests):
         else:
             self.logger.critical("Too far out.")
             return
-        self.group.increment_mark(2)
+        self.submitter.increment_mark(2)
 
     def part_5_tests(self):
         self.logger.info("Setting POT0 to 0x30 and POT1 to 0x60")
@@ -296,12 +316,12 @@ class Prac4Tests(PracTests):
             self.logger.critical("Too far out.")
             return
 
-        self.group.increment_mark(2)
+        self.submitter.increment_mark(2)
 
     def adjust_mark(self):
-        if self.group.submission_time < time.strptime("27 August 2015 09:55", "%d %B %Y %H:%M"):
+        if self.submitter.submission_time < time.strptime("27 August 2015 09:55", "%d %B %Y %H:%M"):
             self.logger.info("Submitted on time - no adjustment")
         else:
             self.logger.info("Submitted after Thursday, 1 mark adjutment")
-            self.group.increment_mark(-1)
-            self.group.mark = max(self.group.mark, 0)
+            self.submitter.increment_mark(-1)
+            self.submitter.mark = max(self.submitter.mark, 0)

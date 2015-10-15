@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = 8
+PRACNUMBER = 4
 
 import importlib
 import os
