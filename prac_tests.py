@@ -23,9 +23,10 @@ class PracTests:
     def run_tests(self):
         self.ii = InterrogatorInterface()
         self.ii.reset(0) # pull NRST low
+        time.sleep(1)
         with OpenOCD(self.logger.getChild('openocd')) as openocd:
-            time.sleep(0.2)
             self.ii.reset(1) # release NRST to allow openocd to connect
+            time.sleep(0.5)
             with GDBInterface(self.logger.getChild('gdb')) as self.gdb:
                 # must be implemented in subclass
                 self.run_specific_prac_tests()

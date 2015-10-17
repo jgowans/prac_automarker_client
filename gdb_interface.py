@@ -108,7 +108,6 @@ class GDBInterface:
             self.logger.debug("Hit breakpoint")
             self.delete_all_breakpoints()
         except Exception as e:
-            print(e)
             self.logger.critical("Breakpoint not hit. Code may have hard-faulted, or stuck in a loop?")
             self.send_control_c()
             self.delete_all_breakpoints()
