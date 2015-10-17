@@ -19,6 +19,7 @@ class Individual:
     def __init__(self, user_id, logger=logging.getLogger(__name__)):
         self.logger = logger
         self.user_id = user_id
+        self.members = user_id
         self.mark = 0
         self.src_file = None
 
@@ -34,7 +35,7 @@ class Individual:
 
     def increment_mark(self, val):
         self.mark += val
-        self.logger.info("Mark set to {m}".format(m = self.mark))
+        self.logger.info("Mark set to {m:.2}".format(m = self.mark))
 
     def find_directories(self, base_dir):
         directories = os.listdir(base_dir)
@@ -65,12 +66,14 @@ class Individual:
         with open(self.submission_directory + self.src_file, "w") as f:
             f.write(stdnum_str + src_code)
 
-    def copy_sources_to_common_dir(self, directory):
+    def copy_files_to_common_dir(self, base):
         members = self.members.replace(' ', '_')
-        file_name = "{m}.s".format(m = members)
-        source_path = "{base}/{src}".format(base = self.submission_directory, src = self.src_file)
-        destination_path = "{d}/{f}".format(d = directory, f = file_name)
-        shutil.copyfile(source_path, destination_path)
+        destination_directory = base + '/' + members
+        os.mkdir(destination_directory)
+        for f in self.files_for_plag_check:
+            source_path = "{base}/{src}".format(base = self.submission_directory, src = f)
+            destination_path = "{d}/{f}".format(d = destination_directory, f = f)
+            shutil.copyfile(source_path, destination_path)
 
     def get_submissiontime(self):
         with open(str(self.group_directory) + "/timestamp.txt") as timefile:

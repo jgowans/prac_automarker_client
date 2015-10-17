@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 
+PRACNUMBER = 1
+
+import importlib
 import os
 import logging
 import time
 import argparse
 import re
 from individual import Individual
-#from prac3_tests import Prac3Tests
-from prac_exam_0_tests import PracExam0Tests
+
+tester_module = importlib.import_module("prac_exam_1_part_{n}_tests".format(n = PRACNUMBER))
+TesterClass = getattr(tester_module, "PracExam1Part{n}Tests".format(n = PRACNUMBER))
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -24,7 +29,7 @@ submitter = Individual(user_id = user_id,
               logger = logger.getChild('manual_marker'))
 submitter.directory = args.d
 submitter.submission_directory = args.d
-submitter.catalogue_submission_files()
-tester = PracExam0Tests(submitter, logger.getChild('prac3'))
+tester = TesterClass(submitter, logger.getChild('prac3'))
+tester.catalogue_submission_files()
 tester.build()
 tester.run_tests()

@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = 9
+PRACNUMBER = 1
 
 import importlib
 import os
 import logging
 import time
 import csv
-import group_manager
-#import individual_manager
+#import group_manager
+import individual_manager
 from prac_tests import BuildFailedError, SourceFileProblem
 
-tester_module = importlib.import_module("prac{n}_tests".format(n = PRACNUMBER))
-TesterClass = getattr(tester_module, "Prac{n}Tests".format(n = PRACNUMBER))
-
+tester_module = importlib.import_module("prac_exam_1_part_{n}_tests".format(n = PRACNUMBER))
+TesterClass = getattr(tester_module, "PracExam1Part{n}Tests".format(n = PRACNUMBER))
 
 logger = logging.getLogger()
 logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
@@ -27,13 +26,13 @@ console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 logger.addHandler(console_handler)
 
-BASE_DIR = "/tmp/Practical{p}/".format(p = PRACNUMBER)
+BASE_DIR = "/tmp/Practical Exam 1 Part {p}/".format(p = PRACNUMBER)
 COMMON_DIR = "/tmp/common_dir_{t}".format(t = time.strftime("%Y_%m_%d_%H_%M_%S"))
 os.mkdir(COMMON_DIR)
 logger.info("Automarker beginning execution")
 
-groupman = group_manager.GroupManager(BASE_DIR)
-for submitter in groupman:
+indivman = individual_manager.IndividualManager(BASE_DIR)
+for submitter in indivman:
     submitter.find_directories(BASE_DIR)
     logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + submitter.members + ':' + logging.BASIC_FORMAT))
     console_handler.setFormatter(logging.Formatter("%(asctime)s:" + submitter.members + ':' + logging.BASIC_FORMAT))
@@ -43,11 +42,11 @@ for submitter in groupman:
     comment_logger.setLevel(logging.INFO)
     logger.addHandler(comment_logger)
     try:
-        tester =  TesterClass(submitter, logger.getChild('prac{n}'.format(n = PRACNUMBER)))
+        tester =  TesterClass(submitter, logger.getChild('part{n}'.format(n = PRACNUMBER)))
         tester.catalogue_submission_files()
         submitter.copy_files_to_common_dir(COMMON_DIR)
-        tester.build()
-        tester.run_tests()
+        #tester.build()
+        #tester.run_tests()
     except SourceFileProblem as e:
         logger.critical("Problem with source files. Exiting")
     except BuildFailedError as e:
@@ -60,5 +59,5 @@ for submitter in groupman:
 logfile_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 logger.info("Generating marks file")
-groupman.generate_marks_file("/tmp/Practical{p}/grades.csv".format(p = PRACNUMBER), \
-        "/tmp/Practical{p}/grades_new.csv".format(p = PRACNUMBER))
+indivman.generate_marks_file("{b}/grades.csv".format(b = BASE_DIR), \
+        "{b}/grades_new.csv".format(b = BASE_DIR))
