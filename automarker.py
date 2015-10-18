@@ -43,10 +43,11 @@ for submitter in indivman:
     logger.addHandler(comment_logger)
     try:
         tester =  TesterClass(submitter, logger.getChild('part{n}'.format(n = PRACNUMBER)))
+        tester.unzip_submission()
         tester.catalogue_submission_files()
         submitter.copy_files_to_common_dir(COMMON_DIR)
-        #tester.build()
-        #tester.run_tests()
+        tester.build()
+        tester.run_tests()
     except SourceFileProblem as e:
         logger.critical("Problem with source files. Exiting")
     except BuildFailedError as e:

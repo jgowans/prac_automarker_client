@@ -52,6 +52,24 @@ class PracTests:
     def clean_marker_directory(self):
         self.exec_as_marker("rm -rf /home/marker/*")
 
+    def unzip_submission(self):
+        os.chdir(self.submitter.submission_directory)
+        all_files = os.listdir()
+        self.logger.info("Before unzip, directory contains: {f}".format(f = all_files))
+        zip_files = [fi for fi in all_files if fi.endswith(".zip")]
+        if len(zip_files) != 1:
+            self.logger.critical("Too many or not enough zip files found out of: {a}. Aborting.".format(a = all_files))
+            raise SourceFileProblem
+        self.logger.info("Extracting zipfile: {z}".format(z = zip_files[0]))
+        try:
+            with zipfile.ZipFile(zip_files[0]) as z:
+                    z.extractall()
+        except zipfile.BadZipFile as e:
+            self.logger.critical(str(e))
+            raise BuildFailedError
+        all_files = os.listdir()
+        self.logger.info("After unzip, directory contains: {f}".format(f = all_files))
+
     def build(self):
         raise NotImplementedError
     
