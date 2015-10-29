@@ -35,7 +35,7 @@ class PracExam1Part1Tests(PracTests):
             self.exec_as_marker(cmd)
         self.logger.info("Running 'make' in submission directory")
         try:
-            self.exec_as_marker("make")
+            self.exec_as_marker("make -B")
         except BuildFailedError as e:
             self.logger.info("Received build error. Aborting")
             raise BuildFailedError
@@ -89,6 +89,7 @@ class PracExam1Part1Tests(PracTests):
             self.ii.highz_pin(0)
             time.sleep(0.2)
         self.logger.info("LEDs should show {before:#x} + 10 = {expected:#x}".format(before = leds_before, expected = leds_before + 10))
+        time.sleep(0.2)
         leds_after = self.ii.read_port(0)
         self.logger.info("LEDs found to show {l:#x}".format(l = leds_after))
         if leds_before + 10 == leds_after:
@@ -105,7 +106,7 @@ class PracExam1Part1Tests(PracTests):
         self.ii.clear_pin(0)
         self.ii.highz_pin(0)
         self.ii.clear_pin(0)
-        time.sleep(0.1)
+        time.sleep(0.5)
         leds_after = self.ii.read_port(0)
         self.logger.info("After edge, LEDs showing: {l:#x}".format(l = leds_after))
         if leds_before == leds_after:
@@ -121,7 +122,7 @@ class PracExam1Part1Tests(PracTests):
         self.ii.highz_pin(0)
         self.ii.clear_pin(0)
         self.ii.highz_pin(0)
-        time.sleep(0.1)
+        time.sleep(0.5)
         leds_after = self.ii.read_port(0)
         self.logger.info("After edge, LEDs showing: {l:#x}".format(l = leds_after))
         if leds_before + 1 == leds_after:

@@ -38,7 +38,7 @@ class PracExam1Part4Tests(PracTests):
             self.exec_as_marker(cmd)
         self.logger.info("Running 'make' in submission directory")
         try:
-            self.exec_as_marker("make")
+            self.exec_as_marker("make -B")
         except BuildFailedError as e:
             self.logger.info("Received build error. Aborting")
             raise BuildFailedError

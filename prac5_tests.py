@@ -6,22 +6,37 @@ import interrogator_interface
 import gdb_interface
 
 class Prac5Tests(PracTests):
+
+    def catalogue_submission_files(self):
+        os.chdir(self.submitter.submission_directory)
+        all_files = os.listdir()
+        self.logger.info("Directory contains: {f}".format(f = all_files))
+        self.submitter.makefiles = [f for f in all_files if f.lower() == 'makefile']
+        if len(self.submitter.makefiles) != 1:
+            self.logger.critical("Too few or too many makefiles submitted")
+            raise SourceFileProblem
+        self.submitter.sfiles = [f for f in all_files if f.endswith(".s")]
+        if len(self.submitter.sfiles) != 1:
+            self.logger.critical("Too many or too few assembly files submitted")
+            raise SourceFileProblem
+        self.submitter.files_to_mark = \
+            self.submitter.makefiles + \
+            self.submitter.sfiles
+        self.logger.info("Selected for marking: {f}".format(f = self.submitter.files_to_mark))
+        self.submitter.files_for_plag_check = \
+            self.submitter.makefiles + \
+            self.submitter.sfiles
+
     def build(self):
         self.clean_marker_directory()
         os.chdir('/home/marker/')
-        for f in self.group.files:
-            cmd = "cp \"{d}/{f}\" /home/marker/".format(d = self.group.submission_directory, f = f)
+        for f in self.submitter.files_to_mark:
+            cmd = "cp \"{d}/{f}\" /home/marker/".format(d = self.submitter.submission_directory, f = f)
             self.exec_as_marker(cmd)
-        all_files = os.listdir()
-        s_files = [fi for fi in all_files if fi.endswith(".s")]
-        if len(s_files) != 1:
-            self.logger.critical("Too many or too few .s files found. Should be only 1 .s file. Actual directory contents: {af}".format(af = all_files))
-            raise BuildFailedError
-        self.logger.info("Found only 1 .s file. Good!")
-        cmd = "sed -i \"s/.word 0xBBAA5500/.word 0x55443366/g\" {f}".format(f = s_files[0])
+        cmd = "sed -i \"s/.word 0xBBAA5500/.word 0x55443366/g\" {f}".format(f = self.submitter.sfiles[0])
         self.exec_as_marker(cmd)
         self.logger.info("Your source file has been modified to replace .word 0xBBAA5500 with .word 0x55443366")
-        cmd = "sed -i \"s/.word 0xFFEEDDCC/.word 0x8877DDCC/g\" {f}".format(f = s_files[0])
+        cmd = "sed -i \"s/.word 0xFFEEDDCC/.word 0x8877DDCC/g\" {f}".format(f = self.submitter.sfiles[0])
         self.exec_as_marker(cmd)
         self.logger.info("Your source file has been modified to replace .word 0xFFEEDDCC with .word 0x8877DDCC")
         self.logger.info("Running 'make' in submission directory")
@@ -93,7 +108,7 @@ class Prac5Tests(PracTests):
         self.logger.info("Found transition. Timing should be 1 second. Found to be: {t} second".format(t = timing))
         if (timing > 1*0.95 and timing < 1*1.05):
             self.logger.info("Correct.")
-            self.group.increment_mark(2)
+            self.submitter.increment_mark(2)
         else:
             self.logger.critical("Too far out. Not awarding marks")
             return
@@ -112,7 +127,7 @@ class Prac5Tests(PracTests):
         self.logger.info("Found transition. Timing should be 2 second. Found to be: {t} second".format(t = timing))
         if (timing > 2*0.95 and timing < 2*1.05):
             self.logger.info("Correct.")
-            self.group.increment_mark(1)
+            self.submitter.increment_mark(1)
         else:
             self.logger.critical("Too far out. Not awarding marks")
             return
@@ -128,7 +143,7 @@ class Prac5Tests(PracTests):
         self.logger.info("Found transition. Timing should be 1 second. Found to be: {t} second".format(t = timing))
         if (timing > 1*0.95 and timing < 1*1.05):
             self.logger.info("Correct.")
-            self.group.increment_mark(1)
+            self.submitter.increment_mark(1)
         else:
             self.logger.critical("Too far out. Not awarding marks")
 
@@ -161,7 +176,7 @@ class Prac5Tests(PracTests):
                 self.logger.critical("Incorrect. Exiting tests")
                 raise TestFailedError
         self.logger.info("Patterns were cycled though.")
-        self.group.increment_mark(1)
+        self.submitter.increment_mark(1)
         self.logger.info("Now testing that cycle speeds is dependant on SW0")
         self.ii.clear_pin(0)
         self.ii.clear_pin(1)
@@ -193,7 +208,7 @@ class Prac5Tests(PracTests):
                 self.logger.critical("Incorrect. Exiting tests")
                 raise TestFailedError
         self.logger.info("Patterns were cycles through at the reduced speed")
-        self.group.increment_mark(1)
+        self.submitter.increment_mark(1)
         self.logger.info("Now testing that it returns to incrementing when SW1 released")
         self.gdb.send_control_c()
         self.ii.highz_pin(0)
@@ -207,6 +222,6 @@ class Prac5Tests(PracTests):
         self.logger.info("Found transition. Timing should be 1 second. Found to be: {t} second".format(t = timing))
         if (timing > 1*0.95 and timing < 1*1.05):
             self.logger.info("Correct.")
-            self.group.increment_mark(1)
+            self.submitter.increment_mark(1)
         else:
             self.logger.critical("Too far out. Not awarding marks")

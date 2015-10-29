@@ -35,7 +35,7 @@ class Individual:
 
     def increment_mark(self, val):
         self.mark += val
-        self.logger.info("Mark set to {m:.2}".format(m = self.mark))
+        self.logger.info("Mark set to {m:.2}".format(m = float(self.mark)))
 
     def find_directories(self, base_dir):
         directories = os.listdir(base_dir)

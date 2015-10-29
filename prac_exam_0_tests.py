@@ -6,10 +6,24 @@ import interrogator_interface
 import gdb_interface
 
 class PracExam0Tests(PracTests):
+
+    def catalogue_submission_files(self):
+        os.chdir(self.submitter.submission_directory)
+        all_files = os.listdir()
+        self.logger.info("After unzip, directory contains: {f}".format(f = all_files))
+        self.submitter.makefiles = [f for f in all_files if f.lower() == 'makefile']
+        self.submitter.sfiles = [f for f in all_files if f.endswith(".s")]
+        self.submitter.files_to_mark = \
+            self.submitter.makefiles + \
+            self.submitter.sfiles
+        self.logger.info("Selected for marking: {f}".format(f = self.submitter.files_to_mark))
+        self.submitter.files_for_plag_check = \
+            self.submitter.sfiles
+
     def build(self):
         self.clean_marker_directory()
         os.chdir('/home/marker/')
-        for f in self.submitter.files:
+        for f in self.submitter.files_to_mark:
             escaped_dir = self.submitter.submission_directory.replace("'", "\\'")
             cmd = "cp \"{d}/{f}\" /home/marker/".format(d = escaped_dir, f = f)
             self.exec_as_marker(cmd)

@@ -41,7 +41,7 @@ class PracExam1Part2Tests(PracTests):
         self.logger.info("Largest value should be 0xD7 and smallest should be 0xA1")
         self.logger.info("Running 'make' in submission directory")
         try:
-            self.exec_as_marker("make")
+            self.exec_as_marker("make -B")
         except BuildFailedError as e:
             self.logger.info("Received build error. Aborting")
             raise BuildFailedError

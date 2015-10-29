@@ -37,7 +37,7 @@ class PracExam1Part3Tests(PracTests):
             self.exec_as_marker(cmd)
         self.logger.info("Running 'make' in submission directory")
         try:
-            self.exec_as_marker("make")
+            self.exec_as_marker("make -B")
         except BuildFailedError as e:
             self.logger.info("Received build error. Aborting")
             raise BuildFailedError
@@ -57,6 +57,8 @@ class PracExam1Part3Tests(PracTests):
         self.ii.highz_pin(1)
         self.ii.highz_pin(2)
         self.ii.highz_pin(3)
+        self.ii.write_dac(0, 0)
+        self.ii.write_dac(1, 0x10)
         try:
             self.gdb.load()
         except gdb_interface.CodeLoadFailed as e:
@@ -102,7 +104,7 @@ class PracExam1Part3Tests(PracTests):
         self.submitter.increment_mark(1)
         self.logger.info("Checking if LEDs are counting up by 1")
         self.ii.write_dac(0, 0)
-        self.ii.write_dac(1, 0)
+        self.ii.write_dac(1, 0x10)
         self.gdb.send_continue()
         leds = self.ii.read_port(0)
         try:

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = 1
-
 import importlib
 import os
 import logging
@@ -9,9 +7,6 @@ import time
 import argparse
 import re
 from individual import Individual
-
-tester_module = importlib.import_module("prac_exam_1_part_{n}_tests".format(n = PRACNUMBER))
-TesterClass = getattr(tester_module, "PracExam1Part{n}Tests".format(n = PRACNUMBER))
 
 
 logger = logging.getLogger()
@@ -23,13 +18,22 @@ logger.addHandler(console_handler)
 
 parser = argparse.ArgumentParser(description = "Individual prac runner")
 parser.add_argument('-d')
+parser.add_argument('-p')
 args = parser.parse_args()
+part = args.p
 user_id = re.search("([a-z]){6}([0-9]){3}", args.d).group(0)
 submitter = Individual(user_id = user_id,
               logger = logger.getChild('manual_marker'))
 submitter.directory = args.d
 submitter.submission_directory = args.d
-tester = TesterClass(submitter, logger.getChild('prac3'))
+
+tester_module = importlib.import_module("prac_exam_1_part_{n}_tests".format(n = part))
+TesterClass = getattr(tester_module, "PracExam1Part{n}Tests".format(n = part))
+#tester_module = importlib.import_module("prac_exam_0_tests".format(n = part))
+#TesterClass = getattr(tester_module, "PracExam0Tests".format(n = part))
+
+tester = TesterClass(submitter, logger.getChild('pe1'))
 tester.catalogue_submission_files()
 tester.build()
 tester.run_tests()
+logger.info("Final Mark: {m:.2}".format(m = float(submitter.mark)))
