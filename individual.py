@@ -20,7 +20,7 @@ class Individual:
         self.logger = logger
         self.user_id = user_id
         self.members = user_id
-        self.mark = 0
+        self.mark = 0.0
         self.src_file = None
 
     def catalogue_submission_files(self):
@@ -35,7 +35,7 @@ class Individual:
 
     def increment_mark(self, val):
         self.mark += val
-        self.logger.info("Mark set to {m:.2}".format(m = float(self.mark)))
+        self.logger.info("Mark set to {m:g}".format(m = self.mark))
 
     def find_directories(self, base_dir):
         directories = os.listdir(base_dir)

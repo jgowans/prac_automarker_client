@@ -45,7 +45,7 @@ class IndividualManager:
         for individual in self:
             for row_to_check in rows:
                 if (len(row_to_check) == 5) and (individual.user_id == row_to_check[1]):
-                        row_to_check[4] = individual.mark
+                        row_to_check[4] = round(individual.mark,1)
                         break  # the mark has been assigned - get out of inner loop
         with open(csv_new, 'w') as fi:
             new_writer = csv.writer(fi)
