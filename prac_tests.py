@@ -5,6 +5,7 @@ from interrogator_interface import InterrogatorInterface
 import subprocess
 import shlex
 import os
+import zipfile
 
 class PracFailedError(Exception):
     pass
@@ -54,7 +55,7 @@ class PracTests:
             with GDBInterface(self.logger.getChild('gdb')) as self.gdb:
                 # must be implemented in subclass
                 self.run_specific_prac_tests()
-        self.logger.info("Final mark: {m:.1}".format(m = self.submitter.mark))
+        self.logger.info("Final mark: {m:g}".format(m = self.submitter.mark))
 
     def exec_as_marker(self, cmd):
         full_cmd = "sudo -u marker HOME=/home/marker sh -c 'cd /home/marker/; " + cmd + "'"

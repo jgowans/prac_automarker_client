@@ -27,8 +27,8 @@ submitter = Individual(user_id = user_id,
 submitter.directory = args.d
 submitter.submission_directory = args.d
 
-tester_module = importlib.import_module("prac_exam_1_part_{n}_tests".format(n = part))
-TesterClass = getattr(tester_module, "PracExam1Part{n}Tests".format(n = part))
+tester_module = importlib.import_module("prac_exam_2_part_{n}_tests".format(n = part))
+TesterClass = getattr(tester_module, "PracExam2Part{n}Tests".format(n = part))
 #tester_module = importlib.import_module("prac_exam_0_tests".format(n = part))
 #TesterClass = getattr(tester_module, "PracExam0Tests".format(n = part))
 
@@ -36,4 +36,4 @@ tester = TesterClass(submitter, logger.getChild('pe1'))
 tester.catalogue_submission_files()
 tester.build()
 tester.run_tests()
-logger.info("Final Mark: {m:.2}".format(m = float(submitter.mark)))
+logger.info("Final Mark: {m:g}".format(m = float(submitter.mark)))

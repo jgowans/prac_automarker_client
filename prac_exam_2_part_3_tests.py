@@ -80,14 +80,13 @@ class PracExam2Part3Tests(PracTests):
             self.logger.critical("TIM6 does not seem to be running as CNT not counting. Leaving test")
             raise TestFailedError
         self.logger.info("TIM6 seems to be running.")
-        self.submitter.increment_mark(1)
-        self.logger.info("Checking if LEDs are counting up by 1")
+        self.logger.info("Checking if LEDs are counting down by 1")
         self.ii.write_dac(1, 0x80)
         self.gdb.send_continue()
         leds = self.ii.read_port(0)
         try:
-            self.logger.info("Looking for transition: {a:#x} -> {b:#x}".format(a = leds+2, b = leds+3))
-            timing = round(self.ii.timing_transition(leds+2, leds+3), 2)
+            self.logger.info("Looking for transition: {a:#x} -> {b:#x}".format(a = (leds-1)%0x100, b = (leds-2)%0x100))
+            timing = round(self.ii.timing_transition((leds-1)%0x100, (leds-2)%0x100), 2)
         except interrogator_interface.LEDTimingTimeout as e:
             self.logger.critical("Could not find incrementing transition")
             raise TestFailedError
@@ -98,13 +97,13 @@ class PracExam2Part3Tests(PracTests):
         for dac1 in to_test:
             self.ii.write_dac(1, dac1)
             expected = round(0.5 + ((dac1/0xFF) * (2.0 - 0.5)), 2)
-            self.logger.info("Wrote {d1:.2} V to POT1.".format(d0 = 3.3*dac0/0xFF, d1 = 3.3*dac1/0xFF))
+            self.logger.info("Wrote {d1:.2} V to POT1.".format(d1 = 3.3*dac1/0xFF))
             self.logger.info("Expected timing of 0.5 + ({v:.2}V/3.3 V)*(2.0-0.5) = {e} s".format(v = 3.3*dac1/0xFF, e = expected))
             time.sleep(0.1)
             leds = self.ii.read_port(0)
             try:
-                self.logger.info("Looking for transition: {a:#x} -> {b:#x}".format(a = leds+1, b = leds+2))
-                timing = round(self.ii.timing_transition(leds+1, leds+2), 2)
+                self.logger.info("Looking for transition: {a:#x} -> {b:#x}".format(a = (leds-1)%0x100, b = (leds-2)%0x100))
+                timing = round(self.ii.timing_transition((leds-1)%0x100, (leds-2)%0x100), 2)
                 self.logger.info("Found timing of: {t} seconds".format(t = timing))
                 if (timing > (expected*0.95)-0.1 and timing < (expected*1.05)+0.1):
                     self.logger.info("Correct.")

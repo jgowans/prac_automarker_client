@@ -6,21 +6,27 @@ import interrogator_interface
 import gdb_interface
 import zipfile
 
-class PracExam2Part1Tests(PracTests):
+class PracExam2Part4Tests(PracTests):
 
     def catalogue_submission_files(self):
         os.chdir(self.submitter.submission_directory)
         all_files = os.listdir()
+        self.logger.info("After unzip, directory contains: {f}".format(f = all_files))
         self.submitter.makefiles = [f for f in all_files if f.lower() == 'makefile']
+        self.submitter.sourcefiles = [f for f in all_files if f.endswith(".c")]
         self.submitter.ldfiles = [f for f in all_files if f.endswith(".ld")]
         self.submitter.sfiles = [f for f in all_files if f.endswith(".s")]
+        self.submitter.headerfiles = [f for f in all_files if f.endswith(".h")]
         self.submitter.files_to_mark = \
             self.submitter.makefiles + \
+            self.submitter.sourcefiles + \
             self.submitter.ldfiles + \
-            self.submitter.sfiles
+            self.submitter.sfiles + \
+            self.submitter.headerfiles
         self.logger.info("Selected for marking: {f}".format(f = self.submitter.files_to_mark))
         self.submitter.files_for_plag_check = \
-            self.submitter.sfiles
+            self.submitter.sourcefiles + \
+            self.submitter.headerfiles
 
     def run_specific_prac_tests(self):
         self.gdb.open_file(self.elf_file)
@@ -31,6 +37,7 @@ class PracExam2Part1Tests(PracTests):
         self.ii.highz_pin(1)
         self.ii.highz_pin(2)
         self.ii.highz_pin(3)
+        self.ii.write_dac(0, 0)
         try:
             self.gdb.load()
         except gdb_interface.CodeLoadFailed as e:
@@ -40,8 +47,8 @@ class PracExam2Part1Tests(PracTests):
         except gdb_interface.CodeVerifyFailed as e:
             return
         try:
-            self.logger.info("----------- PART 1 ----------------")
-            self.part_1_tests()
+            self.logger.info("----------- PART 4 ----------------")
+            self.part_4_tests()
         except TestFailedError as e:
             self.logger.critical("A test failed. Marking cannot continue")
         except interrogator_interface.LEDTimingTimeout as e:
@@ -49,20 +56,11 @@ class PracExam2Part1Tests(PracTests):
         except gdb_interface.GDBException as e:
             self.logger.critical("Your program did not respond the way GDB expected it to")
 
-    def part_1_tests(self):
+    def part_4_tests(self):
+        array = [0x08, 0x18, 0x1C, 0x3C, 0x3E, 0x7E, 0x7F, 0xFF]
         self.gdb.send_continue()
-        to_test = [(0x20, 0xB0), (0x50, 0x90), (0xBA, 0x50), (0x10, 0x40)]
-        for dac0, dac1 in to_test:
-            self.ii.write_dac(0, dac0)
-            self.ii.write_dac(1, dac1)
-            larger = max(dac0, dac1)
-            expected = larger
-            self.logger.info("Wrote {d0:#x} to POT0 and {d1:#x} to POT1".format(d0 = dac0, d1 = dac1))
-            self.logger.info("LEDs expected to show: {larger:#x}".format(larger = larger))
-            time.sleep(0.1)
-            leds = self.ii.read_port(0)
-            self.logger.info("LEDs found to show: {leds:#x}".format(leds = leds))
-            if (leds > ((expected*0.95) - 5)) and (leds < ((expected*1.05) + 2)):
-                self.submitter.increment_mark(0.5)
-            else:
-                self.logger.error("Incorrect")
+        time.sleep(0.1)
+        leds = self.ii.read_port(0)
+        self.logger.info("Initial pattern expected to be 0x08. Found to be: {l:#x}".format(l = leds))
+        if leds == 0x08:
+            self.submitter.increment_mark(0.5)

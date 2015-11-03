@@ -14,10 +14,9 @@ class PracExam2Part0Tests(PracTests):
         self.submitter.makefiles = [f for f in all_files if f.lower() == 'makefile']
         self.submitter.ldfiles = [f for f in all_files if f.endswith(".ld")]
         self.submitter.sfiles = [f for f in all_files if f.endswith(".s")]
-        self.submitter.files_to_mark = \
-            self.submitter.makefiles + \
+        self.submitter.files_to_mark = self.submitter.makefiles + \
             self.submitter.ldfiles + \
-            self.submitter.sfiles + \
+            self.submitter.sfiles
         self.logger.info("Selected for marking: {f}".format(f = self.submitter.files_to_mark))
         self.submitter.files_for_plag_check = \
             self.submitter.sfiles
@@ -55,7 +54,7 @@ class PracExam2Part0Tests(PracTests):
         self.logger.info("Releasing SW3")
         time.sleep(0.1)
         leds = self.ii.read_port(0)
-        self.logger.info("Leds should show 0x42, found to show: {l:#x}".format(l = leds_before))
+        self.logger.info("Leds should show 0x42, found to show: {l:#x}".format(l = leds))
         if leds == 0x42:
             self.submitter.increment_mark(1)
         else:
@@ -64,7 +63,7 @@ class PracExam2Part0Tests(PracTests):
         self.logger.info("Holding SW3")
         time.sleep(0.1)
         leds = self.ii.read_port(0)
-        self.logger.info("Leds should show 0x69, found to show: {l:#x}".format(l = leds_before))
+        self.logger.info("Leds should show 0x69, found to show: {l:#x}".format(l = leds))
         if leds == 0x69:
             self.submitter.increment_mark(1)
         else:
