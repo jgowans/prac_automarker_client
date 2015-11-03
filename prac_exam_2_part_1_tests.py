@@ -6,7 +6,7 @@ import interrogator_interface
 import gdb_interface
 import zipfile
 
-class PracExam1Part1Tests(PracTests):
+class PracExam2Part1Tests(PracTests):
 
     def catalogue_submission_files(self):
         os.chdir(self.submitter.submission_directory)
@@ -41,7 +41,7 @@ class PracExam1Part1Tests(PracTests):
             return
         try:
             self.logger.info("----------- PART 1 ----------------")
-            self.part_0_tests()
+            self.part_1_tests()
         except TestFailedError as e:
             self.logger.critical("A test failed. Marking cannot continue")
         except interrogator_interface.LEDTimingTimeout as e:
@@ -49,7 +49,7 @@ class PracExam1Part1Tests(PracTests):
         except gdb_interface.GDBException as e:
             self.logger.critical("Your program did not respond the way GDB expected it to")
 
-    def part_0_tests(self):
+    def part_1_tests(self):
         self.gdb.send_continue()
         to_test = [(0x20, 0xB0), (0x50, 0x90), (0xBA, 0x50), (0x10, 0x40)]
         for dac0, dac1 in to_test:

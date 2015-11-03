@@ -6,7 +6,7 @@ import interrogator_interface
 import gdb_interface
 import zipfile
 
-class PracExam1Part1Tests(PracTests):
+class PracExam2Part2Tests(PracTests):
 
     def catalogue_submission_files(self):
         os.chdir(self.submitter.submission_directory)
