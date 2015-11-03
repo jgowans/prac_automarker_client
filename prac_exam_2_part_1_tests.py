@@ -61,7 +61,7 @@ class PracExam1Part1Tests(PracTests):
             time.sleep(0.1)
             leds = self.ii.read_port(0)
             self.logger.info("LEDs found to show: {leds:#x}".format(leds = leds))
-            if (leds > ((expected*0.95) - 10)) and (leds < ((expected*1.05) + 5)):
+            if (leds > ((expected*0.95) - 5)) and (leds < ((expected*1.05) + 2)):
                 self.submitter.increment_mark(0.5)
             else:
                 self.logger.error("Incorrect")
