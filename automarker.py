@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-PRACNUMBER = 1
+PRACNUMBER = 0
 
 import importlib
 import os
@@ -11,11 +11,11 @@ import csv
 import individual_manager
 from prac_tests import BuildFailedError, SourceFileProblem
 
-tester_module = importlib.import_module("prac_exam_1_part_{n}_tests".format(n = PRACNUMBER))
-TesterClass = getattr(tester_module, "PracExam1Part{n}Tests".format(n = PRACNUMBER))
+tester_module = importlib.import_module("prac_exam_2_part_{n}_tests".format(n = PRACNUMBER))
+TesterClass = getattr(tester_module, "PracExam2Part{n}Tests".format(n = PRACNUMBER))
 
 logger = logging.getLogger()
-logfile_handler = logging.FileHandler(filename = "/tmp/prac{p}_{t}.log".format(
+logfile_handler = logging.FileHandler(filename = "/tmp/prac_exam_2_part_{p}_{t}.log".format(
     p = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S", time.localtime())))
 logger.setLevel(logging.DEBUG)
 logfile_handler.setLevel(level=logging.DEBUG)
@@ -26,8 +26,8 @@ console_handler.setLevel(logging.DEBUG)
 console_handler.setFormatter(logging.Formatter("%(asctime)s:" + logging.BASIC_FORMAT))
 logger.addHandler(console_handler)
 
-BASE_DIR = "/tmp/Practical Exam 1 Part {p}/".format(p = PRACNUMBER)
-COMMON_DIR = "/tmp/common_dir_{t}".format(t = time.strftime("%Y_%m_%d_%H_%M_%S"))
+BASE_DIR = "/tmp/Practical Exam 2 Part {p}/".format(p = PRACNUMBER)
+COMMON_DIR = "/tmp/prac_exam_2_part{n}_common_dir_{t}".format(n = PRACNUMBER, t = time.strftime("%Y_%m_%d_%H_%M_%S"))
 os.mkdir(COMMON_DIR)
 logger.info("Automarker beginning execution")
 
