@@ -29,6 +29,7 @@ class PracExam2Part4Tests(PracTests):
             self.submitter.headerfiles
 
     def run_specific_prac_tests(self):
+        self.patterns = [0x08, 0x18, 0x1C, 0x3C, 0x3E, 0x7E, 0x7F, 0xFF]
         self.gdb.open_file(self.elf_file)
         self.gdb.connect()
         self.gdb.erase()
@@ -37,7 +38,6 @@ class PracExam2Part4Tests(PracTests):
         self.ii.highz_pin(1)
         self.ii.highz_pin(2)
         self.ii.highz_pin(3)
-        self.ii.write_dac(0, 0)
         try:
             self.gdb.load()
         except gdb_interface.CodeLoadFailed as e:
@@ -56,11 +56,116 @@ class PracExam2Part4Tests(PracTests):
         except gdb_interface.GDBException as e:
             self.logger.critical("Your program did not respond the way GDB expected it to")
 
+    def get_idx(self, val):
+        try:
+            idx = self.patterns.index(val)
+        except ValueError as e:
+            self.logger.info("LEDs were showing {v:#x} which is not a valid pattern".format(v = val))
+            raise TestFailedError
+        return idx
+
+    def get_pattern(self, idx):
+        return self.patterns[idx%len(self.patterns)]
+
+
+    def idx_difference(self, larger, smaller):
+        if larger >= smaller:
+            return larger - smaller
+        else:
+            return larger + len(self.patterns) - smaller
+
     def part_4_tests(self):
-        array = [0x08, 0x18, 0x1C, 0x3C, 0x3E, 0x7E, 0x7F, 0xFF]
         self.gdb.send_continue()
-        time.sleep(0.1)
+        time.sleep(0.3)
         leds = self.ii.read_port(0)
-        self.logger.info("Initial pattern expected to be 0x08. Found to be: {l:#x}".format(l = leds))
-        if leds == 0x08:
+        self.logger.info("Initial pattern found to be: {l:#x}".format(l = leds))
+        leds_before = self.ii.read_port(0)
+        idx_before = self.get_idx(leds_before)
+        self.logger.info("Asserting a single, clean pulse on SW1. LEDs should go to next index")
+        self.ii.clear_pin(1)
+        time.sleep(0.3)
+        self.ii.highz_pin(1)
+        time.sleep(0.3)
+        leds_after = self.ii.read_port(0)
+        idx_after = self.get_idx(leds_after)
+        self.logger.info("After clean pulse, LEDs showing {l:#x} with index {i}".format(l = leds_after, i = idx_after))
+        delta_idx = self.idx_difference(idx_after, idx_before)
+        self.logger.info("That's a change of: {i}".format(i = delta_idx))
+        if delta_idx == 1:
             self.submitter.increment_mark(0.5)
+        else:
+            self.logger.error("Incorrect")
+        leds_before = leds_after
+        idx_before = idx_after
+        self.logger.info("Now checking it's the right edge. Asserting a clean falling edge. Should increment")
+        self.ii.clear_pin(1)
+        time.sleep(0.3)
+        leds_after = self.ii.read_port(0)
+        idx_after = self.get_idx(leds_after)
+        self.logger.info("After clean falling edge, LEDs showing: {l:#x} with index: {i}".format(l = leds_after, i = idx_after))
+        delta_idx = self.idx_difference(idx_after, idx_before)
+        self.logger.info("That's a change of: {delta}".format(delta = delta_idx))
+        if delta_idx == 1:
+            self.logger.info("Correct. Now checking nothing happens when a clean rising edge is occurs")
+            leds_before = leds_after
+            idx_before = idx_after
+            self.ii.highz_pin(1)
+            time.sleep(0.3)
+            leds_after = self.ii.read_port(0)
+            idx_after = self.get_idx(leds_after)
+            self.logger.info("After clean rising edge, LEDs showing: {l:#x} with index: {i}".format(l = leds_after, i = idx_after))
+            delta_idx = self.idx_difference(idx_after, idx_before)
+            self.logger.info("That's a change of: {delta}".format(delta = delta_idx))
+            if delta_idx == 0:
+                self.logger.info("Correct")
+                self.submitter.increment_mark(0.5)
+        self.logger.info("Now checking noisy eges are properly debounced.")
+        self.logger.info("Asserting a noisy falling and noisy rising edge. LEDs should only change once")
+        leds_before = self.ii.read_port(0)
+        idx_before = self.get_idx(leds_before)
+        self.ii.clear_pin(1)
+        self.ii.highz_pin(1)
+        self.ii.clear_pin(1)
+        self.ii.highz_pin(1)
+        self.ii.clear_pin(1)
+        time.sleep(0.5)
+        self.ii.highz_pin(1)
+        self.ii.clear_pin(1)
+        self.ii.highz_pin(1)
+        self.ii.clear_pin(1)
+        self.ii.highz_pin(1)
+        time.sleep(0.5)
+        leds_after = self.ii.read_port(0)
+        idx_after = self.get_idx(leds_after)
+        self.logger.info("After noisy press, LEDs showing: {l:#x} with index: {i}".format(l = leds_after, i = idx_after))
+        delta_idx = self.idx_difference(idx_after, idx_before)
+        self.logger.info("That's a change of: {delta}".format(delta = delta_idx))
+        if delta_idx == 1:
+            self.submitter.increment_mark(0.5)
+        else:
+            self.logger.error("Incorrect")
+        self.logger.info("Now checking for wrapping. Pressing button until last element is shown")
+        for _ in range(10):
+            self.ii.clear_pin(1)
+            time.sleep(0.3)
+            self.ii.highz_pin(1)
+            time.sleep(0.3)
+            if self.ii.read_port(0) == self.patterns[-1]:
+                break
+        leds = self.ii.read_port(0)
+        if leds != self.patterns[-1]:
+            self.logger.error("Could not find last pattern")
+            return
+        self.logger.info("LEDs showing last pattern. Doing one clean press to check it goes to pattern 0")
+        self.ii.clear_pin(1)
+        time.sleep(0.3)
+        self.ii.highz_pin(1)
+        time.sleep(0.3)
+        leds = self.ii.read_port(0)
+        idx = self.get_idx(leds)
+        self.logger.info("LEDs displaying {l:#x} with index {i}".format(l = leds, i = idx))
+        if idx == 0:
+            self.logger.info("Wrapped correctly!")
+            self.submitter.increment_mark(0.5)
+        else:
+            self.logger.error("Incorrect")
