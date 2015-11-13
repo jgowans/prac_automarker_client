@@ -32,7 +32,7 @@ TesterClass = getattr(tester_module, "PracExam2Part{n}Tests".format(n = part))
 #tester_module = importlib.import_module("prac_exam_0_tests".format(n = part))
 #TesterClass = getattr(tester_module, "PracExam0Tests".format(n = part))
 
-tester = TesterClass(submitter, logger.getChild('pe1'))
+tester = TesterClass(submitter, logger.getChild('pe2'))
 tester.catalogue_submission_files()
 tester.build()
 tester.run_tests()
